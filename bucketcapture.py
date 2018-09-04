@@ -12,10 +12,14 @@ Created on Tue Jan 24 20:46:25 2017
 
 import cv2
 
+from cscore import CameraServer
+
 from subprocess import call
 from threading import Lock
 from threading import Thread
 from threading import Condition
+
+import numpy as np
 
 import platform
 
@@ -25,7 +29,7 @@ from framerate import FrameRate
 from frameduration import FrameDuration
 
 class BucketCapture:
-    def __init__(self, name,src,width,height,exposure):
+    def __init__(self,name,src,width,height,exposure):
 
         print("Creating BucketCapture for " + name)
         
@@ -34,52 +38,27 @@ class BucketCapture:
         self.fps = FrameRate()
         self.duration = FrameDuration()
         self.name = name
-        self.src = src
-        
-        # initialize the video camera stream and read the first frame
-        # from the stream
-        self.stream = cv2.VideoCapture(src)
-        self.stream.set(cv2.CAP_PROP_FRAME_WIDTH,width)
-        self.stream.set(cv2.CAP_PROP_FRAME_HEIGHT,height)
         self.exposure = exposure
-
-        self.setExposure()
-
-        self.rate = self.stream.get(cv2.CAP_PROP_FPS)
-        print("RATE = " + str(self.rate))
-        self.brightness = self.stream.get(cv2.CAP_PROP_BRIGHTNESS)
-        print("BRIGHT = " + str(self.brightness))
-        self.contrast = self.stream.get(cv2.CAP_PROP_CONTRAST)
-        print("CONTRAST = " + str(self.contrast))
-        self.saturation = self.stream.get(cv2.CAP_PROP_SATURATION)
-        print("SATURATION = " + str(self.saturation))
-        print("EXPOSURE = " + str(self.exposure))
-##        self.iso = self.stream.get(cv2.CAP_PROP_ISO_SPEED)
-##        print("ISO = " + str(self.iso))
-
-        (self._grabbed, self._frame) = self.stream.read()
-        
-        if (self._grabbed == True):
-            self.grabbed = self._grabbed
-            self.frame = self._frame
-            self.outFrame = self.frame
-            self.count = 1
-            self.outCount = self.count
-        else:
-            self.grabbed = False
-            self.frame = None
-            self.outFrame = None
-            self.count = 0
-            self.outCount = self.count
-
+        self.src = src
+        self.width = width
+        self.height = height
+            
         # initialize the variable used to indicate if the thread should
         # be stopped
         self._stop = False
         self.stopped = True
 
+        self.grabbed = False
+        self.frame = None
+        self.outFrame = None
+        self.count = 0
+        self.outCount = self.count
+
         print("BucketCapture created for " + self.name)
 
     def start(self):
+
+        
         # start the thread to read frames from the video stream
         print("STARTING BucketCapture for " + self.name)
         t = Thread(target=self.update, args=())
@@ -89,25 +68,54 @@ class BucketCapture:
 
     def update(self):
         print("BucketCapture for " + self.name + " RUNNING")
+
         # keep looping infinitely until the thread is stopped
         self.stopped = False
         self.fps.start()
 
         lastExposure = self.exposure
-        
+
+        cs = CameraServer.getInstance()
+        cs.enableLogging()
+
+        camera = cs.startAutomaticCapture(dev=self.src)
+
+        camera.setResolution(self.width, self.height)
+        camera.setExposureManual(0)
+        camera.setBrightness(100)
+
+        # Get a CvSink. This will capture images from the camera
+        cvSink = cs.getVideo()
+
+        # (optional) Setup a CvSource. This will send images back to the Dashboard
+        self.outstream = cs.putVideo("Rectangle", self.width, self.height)
+
+        # Allocating new images is very expensive, always try to preallocate
+        img = np.zeros(shape=(self.height, self.width, 3), dtype=np.uint8)    
+
         while True:
             # if the thread indicator variable is set, stop the thread
             if (self._stop == True):
                 self.stop = False
                 self.stopped = True
                 return
-
+            
             if (lastExposure != self.exposure):
                 self.setExposure()
                 lastExposure = self.exposure
+                
+            # Tell the CvSink to grab a frame from the camera and put it
+            # in the source image.  If there is an error notify the output.
+            time, img = cvSink.grabFrame(img)
+            if time == 0:
+                self._grabbed = False
+                # Send the output the error.
+                self.outstream.notifyError(cvSink.getError());
+                # skip the rest of the current iteration
+                continue
 
-            # otherwise, read the next frame from the stream
-            (self._grabbed, self._frame) = self.stream.read()
+            self._grabbed = True                
+            
             self.duration.start()
             self.fps.update()
             
@@ -122,12 +130,13 @@ class BucketCapture:
                 self._lock.acquire()
                 self.count = self.count + 1
                 self.grabbed = self._grabbed
-                self.frame = self._frame
+                self.frame = img
                 self._lock.release()
                 self._condition.notifyAll()
                 self._condition.release()
 
             self.duration.update()
+
                 
         print("BucketCapture for " + self.name + " STOPPING")
 
@@ -145,61 +154,62 @@ class BucketCapture:
         else:
             return (self.outFrame, self.outCount, False)
 
-    def processUserCommand(self, key):
-        if key == ord('x'):
-            return True
-        elif key == ord('w'):
-            self.brightness+=1
-            self.stream.set(cv2.CAP_PROP_BRIGHTNESS,self.brightness)
-            print("BRIGHT = " + str(self.brightness))
-        elif key == ord('s'):
-            self.brightness-=1
-            self.stream.set(cv2.CAP_PROP_BRIGHTNESS,self.brightness)
-            print("BRIGHT = " + str(self.brightness))
-        elif key == ord('d'):
-            self.contrast+=1
-            self.stream.set(cv2.CAP_PROP_CONTRAST,self.contrast)
-            print("CONTRAST = " + str(self.contrast))
-        elif key == ord('a'):
-            self.contrast-=1
-            self.stream.set(cv2.CAP_PROP_CONTRAST,self.contrast)
-            print("CONTRAST = " + str(self.contrast))
-        elif key == ord('e'):
-            self.saturation+=1
-            self.stream.set(cv2.CAP_PROP_SATURATION,self.saturation)
-            print("SATURATION = " + str(self.saturation))
-        elif key == ord('q'):
-            self.saturation-=1
-            self.stream.set(cv2.CAP_PROP_SATURATION,self.saturation)
-            print("SATURATION = " + str(self.saturation))
-        elif key == ord('z'):
-            self.exposure+=1
-            setExposure(self.exposure)
-            print("EXPOSURE = " + str(self.exposure))
-        elif key == ord('c'):
-            self.exposure-=1
-            setExposure(self.exposure)
-            print("EXPOSURE = " + str(self.exposure))
-##        elif key == ord('p'):
-##            self.iso +=1
-##            self.stream.set(cv2.CAP_PROP_ISO_SPEED, self.iso)
-##        elif key == ord('i'):
-##            self.iso -=1
-##            self.stream.set(cv2.CAP_PROP_ISO_SPEED, self.iso)
-
-        return False
+##    def processUserCommand(self, key):
+##        if key == ord('x'):
+##            return True
+##        elif key == ord('w'):
+##            self.brightness+=1
+##            self.stream.set(cv2.CAP_PROP_BRIGHTNESS,self.brightness)
+##            print("BRIGHT = " + str(self.brightness))
+##        elif key == ord('s'):
+##            self.brightness-=1
+##            self.stream.set(cv2.CAP_PROP_BRIGHTNESS,self.brightness)
+##            print("BRIGHT = " + str(self.brightness))
+##        elif key == ord('d'):
+##            self.contrast+=1
+##            self.stream.set(cv2.CAP_PROP_CONTRAST,self.contrast)
+##            print("CONTRAST = " + str(self.contrast))
+##        elif key == ord('a'):
+##            self.contrast-=1
+##            self.stream.set(cv2.CAP_PROP_CONTRAST,self.contrast)
+##            print("CONTRAST = " + str(self.contrast))
+##        elif key == ord('e'):
+##            self.saturation+=1
+##            self.stream.set(cv2.CAP_PROP_SATURATION,self.saturation)
+##            print("SATURATION = " + str(self.saturation))
+##        elif key == ord('q'):
+##            self.saturation-=1
+##            self.stream.set(cv2.CAP_PROP_SATURATION,self.saturation)
+##            print("SATURATION = " + str(self.saturation))
+##        elif key == ord('z'):
+##            self.exposure+=1
+##            setExposure(self.exposure)
+##            print("EXPOSURE = " + str(self.exposure))
+##        elif key == ord('c'):
+##            self.exposure-=1
+##            setExposure(self.exposure)
+##            print("EXPOSURE = " + str(self.exposure))
+####        elif key == ord('p'):
+####            self.iso +=1
+####            self.stream.set(cv2.CAP_PROP_ISO_SPEED, self.iso)
+####        elif key == ord('i'):
+####            self.iso -=1
+####            self.stream.set(cv2.CAP_PROP_ISO_SPEED, self.iso)
+##
+##        return False
 
     def updateExposure(self, exposure):
         self.exposure = exposure
         
     def setExposure(self):
+        pass
         # cv2 exposure control DOES NOT WORK ON PI self.stream.set(cv2.CAP_PROP_EXPOSURE,self.exposure)
         # cv2 exposure control DOES NOT WORK ON PI self.stream.set(cv2.CAP_PROP_EXPOSURE,self.exposure)
-        if (platform.system() == 'Windows'):
-            self.stream.set(cv2.CAP_PROP_EXPOSURE,self.exposure)
-        else:
-            cmd = ['v4l2-ctl --device=' + str(self.src) + ' -c exposure_auto=1 -c exposure_absolute=' + str(self.exposure)]
-            call(cmd,shell=True)
+##        if (platform.system() == 'Windows'):
+##            self.stream.set(cv2.CAP_PROP_EXPOSURE,self.exposure)
+##        else:
+##            cmd = ['v4l2-ctl --device=' + str(self.src) + ' -c exposure_auto=1 -c exposure_absolute=' + str(self.exposure)]
+##            call(cmd,shell=True)
         
     
     def stop(self):
