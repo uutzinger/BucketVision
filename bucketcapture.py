@@ -88,7 +88,7 @@ class BucketCapture:
         cvSink = cs.getVideo()
 
         # (optional) Setup a CvSource. This will send images back to the Dashboard
-        self.outstream = cs.putVideo("Rectangle", self.width, self.height)
+        self.outstream = cs.putVideo(self.name, self.width, self.height)
 
         # Allocating new images is very expensive, always try to preallocate
         img = np.zeros(shape=(self.height, self.width, 3), dtype=np.uint8)    
