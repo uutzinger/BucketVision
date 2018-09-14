@@ -64,8 +64,9 @@ import platform
 if (platform.system() == 'Windows'):
     roboRioAddress = '127.0.0.1'
 else:
+    #roboRioAddress = '10.41.83.2' # On competition field
     #roboRioAddress = '10.38.14.2' # On practice field
-    roboRioAddress = '192.168.0.103' # On competition field
+    roboRioAddress = '192.168.0.103' # At 'home'
 
 # Instances of GRIP created pipelines (they usually require some manual manipulation
 # but basically we would pass one or more of these into one or more image processors (threads)
