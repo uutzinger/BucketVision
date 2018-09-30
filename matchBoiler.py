@@ -147,6 +147,7 @@ endtime = time.time()
 
 print(endtime - starttime)
 cv2.imshow("Image", img2c)
+cv2.imshow("match", img3)
 cv2.waitKey(0)
 
 #plt.imshow(img3, 'gray'),plt.show()
