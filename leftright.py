@@ -174,7 +174,7 @@ pl.ylabel('Z')
 
 fig = pl.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.scatter(src_x, 1/(src_x-dst_x), src_y)
+ax.scatter(src_x, 1/(src_x-dst_x), -src_y)
 ax.set_xlabel('X Label')
 ax.set_ylabel('Z Label')
 ax.set_zlabel('Y Label')
