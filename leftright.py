@@ -52,7 +52,7 @@ img2c = cv2.imread('rightPic.jpg')
 #img2c = cv2.resize(img2c,(320,240))
 #img2c = cv2.resize(img2c,(int(img2c.shape[1]/3),int(img2c.shape[0]/3)))
 img2 = cv2.cvtColor(img2c, cv2.COLOR_BGR2GRAY)
-
+print(img2.shape)
 
 starttime = time.time()
 
@@ -110,12 +110,12 @@ if (crossCheck == False):
     goodCount= len(good)
     if (goodCount>MIN_MATCH_COUNT):
         src = [kp1[m.queryIdx].pt for m in good]
-        src_x = [x[0] for x in src]
-        src_y = [x[1] for x in src]
+        src_x = np.array([x[0] for x in src])
+        src_y = np.array([x[1] for x in src])
         src_pts = np.float32(src).reshape(-1,1,2)
         dst = [kp2[m.trainIdx].pt for m in good]
-        dst_x = [x[0] for x in dst]
-        dst_y = [x[1] for x in dst]        
+        dst_x = np.array([x[0] for x in dst])
+        dst_y = np.array([x[1] for x in dst])
         dst_pts = np.float32(dst).reshape(-1,1,2)
         M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC,5.0)
         matchesMask = mask.ravel().tolist()
@@ -153,10 +153,14 @@ endtime = time.time()
 
 print(endtime - starttime)
 idx = list(np.nonzero(matchesMask)[0].astype(int))
+src_x = src_x[idx]
+src_y = src_y[idx]
+dst_x = dst_x[idx]
+dst_y = dst_y[idx]
 pl.figure(1)
-pl.plot(np.array(src_x)[idx],np.array(src_y)[idx],'+',np.array(dst_x)[idx],np.array(dst_y)[idx],'x')
+pl.plot(src_x,src_y,'+',dst_x,dst_y,'x')
 pl.figure(2)
-pl.plot(np.array(src_x)[idx],np.array(src_x)[idx]-np.array(dst_x)[idx],'+')
+pl.plot(src_x,1/(src_x-dst_x),'+')
 
 cv2.imshow("Image", img2c)
 cv2.imshow("match", img3)
