@@ -159,7 +159,7 @@ src_y = src_y[idx]
 dst_x = dst_x[idx]
 dst_y = dst_y[idx]
 pl.figure(1)
-pl.plot(src_x,src_y,'+',dst_x,dst_y,'x')
+pl.plot(src_x,-src_y,'+',dst_x,-dst_y,'x')
 pl.xlabel('X')
 pl.ylabel('Y')
 pl.figure(2)
@@ -167,7 +167,7 @@ pl.plot(src_x,1/(src_x-dst_x),'+')
 pl.xlabel('X')
 pl.ylabel('Z')
 pl.figure(3)
-pl.plot(src_y,1/(src_x-dst_x),'+')
+pl.plot(-src_y,1/(src_x-dst_x),'+')
 pl.xlabel('Y')
 pl.ylabel('Z')
 
@@ -180,7 +180,7 @@ ax.set_ylabel('Z Label')
 ax.set_zlabel('Y Label')
 pl.show()
 
-cv2.imshow("Image", img2c)
+#cv2.imshow("Image", img2c)
 cv2.imshow("match", img3)
 cv2.waitKey(0)
 
