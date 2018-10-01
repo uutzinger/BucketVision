@@ -39,6 +39,7 @@ import cv2
 import time
 import math
 from matplotlib import pyplot as pl
+from mpl_toolkits.mplot3d import Axes3D
 
 MIN_MATCH_COUNT = 10
 
@@ -159,8 +160,25 @@ dst_x = dst_x[idx]
 dst_y = dst_y[idx]
 pl.figure(1)
 pl.plot(src_x,src_y,'+',dst_x,dst_y,'x')
+pl.xlabel('X')
+pl.ylabel('Y')
 pl.figure(2)
 pl.plot(src_x,1/(src_x-dst_x),'+')
+pl.xlabel('X')
+pl.ylabel('Z')
+pl.figure(3)
+pl.plot(src_y,1/(src_x-dst_x),'+')
+pl.xlabel('Y')
+pl.ylabel('Z')
+
+
+fig = pl.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter(src_x, 1/(src_x-dst_x), src_y)
+ax.set_xlabel('X Label')
+ax.set_ylabel('Z Label')
+ax.set_zlabel('Y Label')
+pl.show()
 
 cv2.imshow("Image", img2c)
 cv2.imshow("match", img3)
