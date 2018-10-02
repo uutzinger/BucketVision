@@ -39,7 +39,10 @@ import cv2
 import time
 import math
 from matplotlib import pyplot as pl
+from matplotlib import image as mpimg
+
 from mpl_toolkits.mplot3d import Axes3D
+
 
 MIN_MATCH_COUNT = 10
 
@@ -105,8 +108,8 @@ if (crossCheck == False):
     # store all the good matches as per Lowe's ratio test.
     good = []
     for m,n in matches:
-        if m.distance < 0.99*n.distance:
-            good.append(m)
+        #if m.distance < 1.00*n.distance:
+        good.append(m)
     
     goodCount= len(good)
     if (goodCount>MIN_MATCH_COUNT):
@@ -158,31 +161,33 @@ src_x = src_x[idx]
 src_y = src_y[idx]
 dst_x = dst_x[idx]
 dst_y = dst_y[idx]
-pl.figure(1)
+
+pl.figure()
+img = mpimg.imread("armstrong-trophy-and-naval-court-1862-web.jpg")
+pl.imshow(img)
+
+pl.figure()
 pl.plot(src_x,-src_y,'+',dst_x,-dst_y,'x')
 pl.xlabel('X')
 pl.ylabel('Y')
-pl.figure(2)
+
+pl.figure()
 pl.plot(src_x,1/(src_x-dst_x),'+')
 pl.xlabel('X')
 pl.ylabel('Z')
-pl.figure(3)
-pl.plot(-src_y,1/(src_x-dst_x),'+')
-pl.xlabel('Y')
-pl.ylabel('Z')
-
 
 fig = pl.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.scatter(src_x, 1/(src_x-dst_x), -src_y)
+ax.scatter((src_x + dst_x)/2, 1/(src_x-dst_x), -(src_y+dst_y)/2)
 ax.set_xlabel('X Label')
 ax.set_ylabel('Z Label')
 ax.set_zlabel('Y Label')
-pl.show()
+
+pl.show(block=True)
 
 #cv2.imshow("Image", img2c)
-cv2.imshow("match", img3)
-cv2.waitKey(0)
+
+#cv2.waitKey(0)
 
 #plt.imshow(img3, 'gray'),plt.show()
 #plt.imshow(gray),plt.show()
