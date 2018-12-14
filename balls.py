@@ -47,7 +47,10 @@ masked = cv2.bitwise_and(image, image, mask = threshmask)
 canny = cv2.Canny(masked, 10, 255)
 #cv2.imshow("Canny", canny)
 
-(_, contours, _) = cv2.findContours(canny.copy(), cv2.RETR_EXTERNAL,
+#(_, contours, _) = cv2.findContours(canny.copy(), cv2.RETR_EXTERNAL,
+#cv2.CHAIN_APPROX_SIMPLE)
+
+(_, contours, _) = cv2.findContours(threshmask.copy(), cv2.RETR_EXTERNAL,
 cv2.CHAIN_APPROX_SIMPLE)
 
 #print("{} candidates in this image".format(len(contours)))
@@ -61,16 +64,16 @@ for con in contours:
 		contours_area.append(con)
 #print("Reduce to {} balls in this image".format(len(contours_area)))
 
-# contours_circles = []
+contours_circles = []
 
 #check if contour is of circular shape
-# for con in contours_area:
-	# perimeter = cv2.arcLength(con, True)
-	# area = cv2.contourArea(con)
-	# if perimeter != 0:
-		# circularity = 4*math.pi*(area/(perimeter*perimeter))
-		# if 0.3 < circularity < 4.0:
-			# contours_circles.append(con)
+for con in contours_area:
+	perimeter = cv2.arcLength(con, True)
+	area = cv2.contourArea(con)
+	if perimeter != 0:
+		circularity = 4*math.pi*(area/(perimeter*perimeter))
+		if 0.3 < circularity < 1.2:
+			contours_circles.append(con)
 			
 balls = image.copy()
 
@@ -79,6 +82,12 @@ for con in contours_area:
 	center = (int(x),int(y))
 	radius = int(radius)
 	cv2.circle(balls,center,radius,(0,255,0),2)
+	x,y,w,h = cv2.boundingRect(con)
+	cv2.rectangle(balls,(x,y),(x+w,y+h),(255,0,0),2)
+	rect = cv2.minAreaRect(con)
+	box = cv2.boxPoints(rect)
+	box = np.int0(box)
+	cv2.drawContours(balls,[box],0,(0,0,255),2)
 
 print("Duration = ", time.time() - start)
 
