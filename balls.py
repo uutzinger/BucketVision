@@ -30,9 +30,10 @@ cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 4)
 #cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, 3)
 #cv2.imshow("Gaussian Thresh", thresh2)
 
+f = 1.0
 hue = [0.0, 61.74061433447099]
 sat = [73.38129496402877, 255.0]
-val = [215.55755395683454, 255.0]
+val = [215.55755395683454*f, 255.0*f]
 
 out = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 thresh3 = cv2.inRange(out, (hue[0], sat[0], val[0]),  (hue[1], sat[1], val[1]))
@@ -64,16 +65,16 @@ for con in contours:
 		contours_area.append(con)
 #print("Reduce to {} balls in this image".format(len(contours_area)))
 
-contours_circles = []
+#contours_circles = []
 
 #check if contour is of circular shape
-for con in contours_area:
-	perimeter = cv2.arcLength(con, True)
-	area = cv2.contourArea(con)
-	if perimeter != 0:
-		circularity = 4*math.pi*(area/(perimeter*perimeter))
-		if 0.3 < circularity < 1.2:
-			contours_circles.append(con)
+# for con in contours_area:
+	# perimeter = cv2.arcLength(con, True)
+	# area = cv2.contourArea(con)
+	# if perimeter != 0:
+		# circularity = 4*math.pi*(area/(perimeter*perimeter))
+		# if 0.3 < circularity < 1.2:
+			# contours_circles.append(con)
 			
 balls = image.copy()
 
