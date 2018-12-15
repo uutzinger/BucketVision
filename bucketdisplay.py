@@ -1,4 +1,5 @@
 import cv2
+import time
 from threading import Thread
 
 from framerate import FrameRate
@@ -46,7 +47,7 @@ class BucketDisplay:
                 return
 
             try:
-                camModeValue = mode.value
+                camModeValue = self.mode
                 cameraSelection = self.cams[camModeValue]
                 processorSelection = self.procs[camModeValue]
             except:
@@ -78,6 +79,10 @@ class BucketDisplay:
                 cameraSelection.outstream.putFrame(img)
               
             self.duration.update()
+            delta = (1.0/15.0) - self.duration.elapsed()
+            if delta > 0:
+                time.sleep(delta);
+                
                 
         print("BucketDisplay for " + self.name + " STOPPING")
           

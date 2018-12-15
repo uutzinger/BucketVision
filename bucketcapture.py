@@ -13,6 +13,7 @@ Created on Tue Jan 24 20:46:25 2017
 import cv2
 
 from cscore import CameraServer
+from cscore import VideoMode
 
 from subprocess import call
 from threading import Lock
@@ -81,8 +82,14 @@ class BucketCapture:
         camera = cs.startAutomaticCapture(dev=self.src)
 
         camera.setResolution(self.width, self.height)
-        camera.setExposureManual(0)
-        camera.setBrightness(100)
+        camera.setPixelFormat(VideoMode.PixelFormat.kYUYV)
+        camera.setFPS(30)
+        p = camera.enumerateVideoModes()
+        for pi in p:
+            print(pi.fps, pi.height, pi.width, pi.pixelFormat)
+            
+        #camera.setExposureManual(0)
+        #camera.setBrightness(100)
 
         # Get a CvSink. This will capture images from the camera
         cvSink = cs.getVideo()

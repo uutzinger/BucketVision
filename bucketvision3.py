@@ -58,12 +58,15 @@ from bucketcapture import BucketCapture     # Camera capture threads... may rena
 from bucketprocessor import BucketProcessor   # Image processing threads... has same basic structure (may merge classes)
 from bucketdisplay import BucketDisplay
 
+import platform
 
 # Address for NetworkTable server
-#networkTableServerAddress = '127.0.0.1'  # Loopback
-#networkTableServerAddress = '10.41.83.2' # Rio On competition field
-#networkTableServerAddress = '10.38.14.2' # Rio On practice field
-networkTableServerAddress = '192.168.0.103' # At 'home'
+if (platform.system() == 'Windows'):
+    networkTableServer = '127.0.0.1'
+else:
+    #networkTableServer = '10.38.14.2' # On practice field
+    networkTableServer = '10.41.83.2' #competition addres
+    #networkTableServer = '192.168.0.103' # Home
 
 # Instances of GRIP created pipelines (they usually require some manual manipulation
 # but basically we would pass one or more of these into one or more image processors (threads)
@@ -91,7 +94,7 @@ print("Starting BUCKET VISION!")
 logging.basicConfig(level=logging.DEBUG)
 
 try:
-    NetworkTables.initialize(server=networkTableServerAddress)
+    NetworkTables.initialize(server=networkTableServer)
     
 except ValueError as e:
     print(e)
@@ -135,11 +138,14 @@ FRONT_CAM_GEAR_EXPOSURE = 0
 FRONT_CAM_NORMAL_EXPOSURE = -1   # Camera default
 
 frontCam = BucketCapture(name="FrontCam",src=0,width=320,height=240,exposure=FRONT_CAM_GEAR_EXPOSURE).start()    # start low for gears
+#backCam = BucketCapture(name="BackCam",src=1,width=320,height=240,exposure=FRONT_CAM_GEAR_EXPOSURE).start()    # start low for gears
 
 print("Waiting for BucketCapture to start...")
 while ((frontCam.isStopped() == True)):
     time.sleep(0.001)
-
+#while ((backCam.isStopped() == True)):
+#    time.sleep(0.001)
+    
 print("BucketCapture appears online!")
 
 # NOTE: NOTE: NOTE
@@ -151,17 +157,19 @@ print("BucketCapture appears online!")
 # pipeline was defined... we can't control the use of object-specific internals
 # being run from multiple threads... so don't do it!)
 
-frontPipes = {'nada'  : nada,
-              'cubes' : cubes,
-              'faces' : faces}
+pipes = {'nada'  : nada,
+         'cubes' : cubes,
+         'faces' : faces}
 
-frontProcessor = BucketProcessor(frontCam,frontPipes,'nada').start()
+frontProcessor = BucketProcessor(frontCam,pipes,'faces').start()
+#backProcessor = BucketProcessor(backCam,pipes,'nada').start()
 
 
 print("Waiting for BucketProcessors to start...")
 while ((frontProcessor.isStopped() == True)):
     time.sleep(0.001)
-
+#while ((backProcessor.isStopped() == True)):
+#    time.sleep(0.001)
 print("BucketProcessors appear online!")
 
 # Continue feeding display or streams in foreground told to stop
@@ -182,16 +190,21 @@ print("BucketProcessors appear online!")
 #
 
 camera = {'frontCam' : frontCam}
+          #'backCam'  : backCam}
 processor = {'frontCam' : frontProcessor}
+             #'backCam'  : backProcessor}
 
 
         
 # Start the display loop
 print("Waiting for BucketDisplay to start...")
-display = BucketDisplay(camMode, camera, processor).start()
+display = BucketDisplay('frontCam', camera, processor).start()
+#backDisplay = BucketDisplay('backCam', camera, processor).start()
 
 while (display.isStopped() == True):
     time.sleep(0.001)
+#while (backDisplay.isStopped() == True):
+    #time.sleep(0.001)
 
 print("Display appears online!")
 bvTable.putString("BucketVisionState","ONLINE")
@@ -205,6 +218,7 @@ while (True):
     if (time.time() > nextTime):
         nextTime = nextTime + 1
         runTime = runTime + 1
+        bvTable.putNumber("BucketVisionTime",runTime)
         #print("BucketVisiontime = %d" % runTime)
 
 ##    if (frontCamMode.value == 'gearLift'):
