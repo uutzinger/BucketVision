@@ -65,8 +65,8 @@ if (platform.system() == 'Windows'):
     networkTableServer = '127.0.0.1'
 else:
     #networkTableServer = '10.38.14.2' # On practice field
-    networkTableServer = '10.41.83.2' #competition addres
-    #networkTableServer = '192.168.0.103' # Home
+    #networkTableServer = '10.41.83.2' #competition addres
+    networkTableServer = '192.168.0.103' # Home
 
 # Instances of GRIP created pipelines (they usually require some manual manipulation
 # but basically we would pass one or more of these into one or more image processors (threads)
@@ -86,6 +86,7 @@ else:
 from nada import Nada
 from cubes import Cubes
 from faces import Faces
+from findballs import FindBalls
 
 # And so it begins
 print("Starting BUCKET VISION!")
@@ -126,6 +127,7 @@ location = bvTable.getAutoUpdateValue('allianceLocation',1)
 nada = Nada()
 cubes = Cubes()
 faces = Faces()
+balls = FindBalls()
 
 # NOTE: NOTE: NOTE:
 #
@@ -159,9 +161,10 @@ print("BucketCapture appears online!")
 
 pipes = {'nada'  : nada,
          'cubes' : cubes,
-         'faces' : faces}
+         'faces' : faces,
+         'balls' : balls}
 
-frontProcessor = BucketProcessor(frontCam,pipes,'faces').start()
+frontProcessor = BucketProcessor(frontCam,pipes,'balls').start()
 #backProcessor = BucketProcessor(backCam,pipes,'nada').start()
 
 
