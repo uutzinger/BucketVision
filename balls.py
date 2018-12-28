@@ -7,9 +7,11 @@ import time
 ap = argparse.ArgumentParser()
 ap.add_argument("-i", "--image", required = True,
 help = "Path to the image")
+ap.add_argument("-f", "--factor", required = False, default=1.0, help = "Lightness Factor 0.0 to 1.0")
 args = vars(ap.parse_args())
 
 image = cv2.imread(args["image"])
+f = float(args["factor"])
 
 w = 640.0
 r = w / image.shape[1]
@@ -20,32 +22,32 @@ start = time.time()
 
 imagebw = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 blurred = cv2.GaussianBlur(imagebw, (9, 9), 0)
-#cv2.imshow("Image", imagebw)
+cv2.imshow("Image", imagebw)
 
 thresh1 = cv2.adaptiveThreshold(blurred, 255,
 cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 4)
-#cv2.imshow("Mean Thresh", thresh1)
+cv2.imshow("Mean Thresh", thresh1)
 
 #thresh2 = cv2.adaptiveThreshold(blurred, 255,
 #cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 15, 3)
 #cv2.imshow("Gaussian Thresh", thresh2)
 
-f = 1.0
+
 hue = [0.0, 61.74061433447099]
 sat = [73.38129496402877, 255.0]
 val = [215.55755395683454*f, 255.0*f]
 
 out = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 thresh3 = cv2.inRange(out, (hue[0], sat[0], val[0]),  (hue[1], sat[1], val[1]))
-#cv2.imshow("HSV Thresh", thresh3)
+cv2.imshow("HSV Thresh", thresh3)
 
 threshmask = cv2.bitwise_and(thresh1, thresh1, mask = thresh3) 
-#cv2.imshow("and mask", threshmask)
+cv2.imshow("and mask", threshmask)
 
-masked = cv2.bitwise_and(image, image, mask = threshmask)
+#masked = cv2.bitwise_and(image, image, mask = threshmask)
 #cv2.imshow("Mask Applied to Image", masked)
 
-canny = cv2.Canny(masked, 10, 255)
+#canny = cv2.Canny(masked, 10, 255)
 #cv2.imshow("Canny", canny)
 
 #(_, contours, _) = cv2.findContours(canny.copy(), cv2.RETR_EXTERNAL,
@@ -78,7 +80,7 @@ for con in contours:
 			
 balls = image.copy()
 
-for con in contours_area:
+for con in contours:
 	(x,y),radius = cv2.minEnclosingCircle(con)
 	center = (int(x),int(y))
 	radius = int(radius)
