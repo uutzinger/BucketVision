@@ -103,7 +103,7 @@ class BucketCapture:
         while True:
             # if the thread indicator variable is set, stop the thread
             if (self._stop == True):
-                self.stop = False
+                self._stop = False
                 self.stopped = True
                 return
             
