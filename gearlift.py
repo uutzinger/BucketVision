@@ -359,7 +359,7 @@ class GearLift:
         numObservations = len(observations)
         
         # Draw thin line down center of screen
-        cv2.line(source0,(320/2,0),(320/2,240),(255,0,0),1)
+        cv2.line(source0,(int(320/2),0),(int(320/2),240),(255,0,0),1)
         
         nan = float('NaN')
         

@@ -65,8 +65,9 @@ if (platform.system() == 'Windows'):
     networkTableServer = '127.0.0.1'
 else:
     #networkTableServer = '10.38.14.2' # On practice field
+    networkTableServer = '10.41.83.215' #Junior 2 radio to PC with OutlineViewer in Server Mode
     #networkTableServer = '10.41.83.2' #competition addres
-    networkTableServer = '192.168.0.103' # Home
+    #networkTableServer = '192.168.0.103' # Home
 
 # Instances of GRIP created pipelines (they usually require some manual manipulation
 # but basically we would pass one or more of these into one or more image processors (threads)
@@ -86,6 +87,7 @@ else:
 from nada import Nada
 from cubes import Cubes
 from faces import Faces
+from gearlift import GearLift
 from findballs import FindBalls
 
 # And so it begins
@@ -109,7 +111,7 @@ bvTable.putString("BucketVisionState","Starting")
 
 # Make the cameraMode an auto updating listener from the network table
 camMode = bvTable.getAutoUpdateValue('CurrentCam','frontCam') # 'frontcam' or 'rearcam'
-frontCamMode = bvTable.getAutoUpdateValue('FrontCamMode', 'nada')
+frontCamMode = bvTable.getAutoUpdateValue('FrontCamMode', 'gears')
 alliance = bvTable.getAutoUpdateValue('allianceColor','red')   # default until chooser returns a value
 location = bvTable.getAutoUpdateValue('allianceLocation',1)
 
@@ -128,6 +130,7 @@ nada = Nada()
 cubes = Cubes()
 faces = Faces()
 balls = FindBalls()
+gears = GearLift(bvTable)
 
 # NOTE: NOTE: NOTE:
 #
@@ -162,9 +165,10 @@ print("BucketCapture appears online!")
 pipes = {'nada'  : nada,
          'cubes' : cubes,
          'faces' : faces,
-         'balls' : balls}
+         'balls' : balls,
+         'gears'  : gears}
 
-frontProcessor = BucketProcessor(frontCam,pipes,'balls').start()
+frontProcessor = BucketProcessor(frontCam,pipes,'gears').start()
 #backProcessor = BucketProcessor(backCam,pipes,'nada').start()
 
 
