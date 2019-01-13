@@ -138,7 +138,7 @@ class BucketCapture:
                 self._lock.acquire()
                 self.count = self.count + 1
                 self.grabbed = self._grabbed
-                self.frame = img
+                self.frame = img.copy()
                 self._lock.release()
                 self._condition.notifyAll()
                 self._condition.release()
