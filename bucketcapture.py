@@ -79,17 +79,18 @@ class BucketCapture:
         cs = CameraServer.getInstance()
         cs.enableLogging()
 
-        camera = cs.startAutomaticCapture(dev=self.src)
+        self.camera = cs.startAutomaticCapture(dev=self.src)
 
-        camera.setResolution(self.width, self.height)
-        camera.setPixelFormat(VideoMode.PixelFormat.kYUYV)
-        camera.setFPS(30)
-        p = camera.enumerateVideoModes()
+        self.camera.setResolution(self.width, self.height)
+        self.camera.setPixelFormat(VideoMode.PixelFormat.kYUYV)
+        self.camera.setFPS(150)
+        self.camera.setExposureManual(self.exposure);
+        p = self.camera.enumerateVideoModes()
         for pi in p:
             print(pi.fps, pi.height, pi.width, pi.pixelFormat)
             
-        #camera.setExposureManual(0)
-        #camera.setBrightness(100)
+        #self.camera.setExposureManual(0)
+        #self.camera.setBrightness(100)
 
         # Get a CvSink. This will capture images from the camera
         cvSink = cs.getVideo()
@@ -137,7 +138,7 @@ class BucketCapture:
                 self._lock.acquire()
                 self.count = self.count + 1
                 self.grabbed = self._grabbed
-                self.frame = img
+                self.frame = img.copy()
                 self._lock.release()
                 self._condition.notifyAll()
                 self._condition.release()
@@ -209,15 +210,8 @@ class BucketCapture:
         self.exposure = exposure
         
     def setExposure(self):
+        self.camera.setExposureManual(self.exposure);
         pass
-        # cv2 exposure control DOES NOT WORK ON PI self.stream.set(cv2.CAP_PROP_EXPOSURE,self.exposure)
-        # cv2 exposure control DOES NOT WORK ON PI self.stream.set(cv2.CAP_PROP_EXPOSURE,self.exposure)
-##        if (platform.system() == 'Windows'):
-##            self.stream.set(cv2.CAP_PROP_EXPOSURE,self.exposure)
-##        else:
-##            cmd = ['v4l2-ctl --device=' + str(self.src) + ' -c exposure_auto=1 -c exposure_absolute=' + str(self.exposure)]
-##            call(cmd,shell=True)
-        
     
     def stop(self):
         # indicate that the thread should be stopped
