@@ -82,7 +82,7 @@ class BucketDisplay:
             delta = (1.0/15.0) - self.duration.elapsed()
             if delta > 0:
                 pass
-            #time.sleep(delta);
+            time.sleep(delta);
                 
                 
         print("BucketDisplay for " + self.name + " STOPPING")
