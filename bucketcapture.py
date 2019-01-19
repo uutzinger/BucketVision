@@ -83,7 +83,7 @@ class BucketCapture:
 
         self.camera.setResolution(self.width, self.height)
         self.camera.setPixelFormat(VideoMode.PixelFormat.kYUYV)
-        self.camera.setFPS(150)
+        self.camera.setFPS(30)
         self.camera.setExposureManual(self.exposure);
         p = self.camera.enumerateVideoModes()
         for pi in p:
