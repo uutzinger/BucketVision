@@ -72,7 +72,7 @@ class BucketCapture:
 
         # keep looping infinitely until the thread is stopped
         self.stopped = False
-        self.fps.start()
+        self.fps.start(30)
 
         lastExposure = self.exposure
 
