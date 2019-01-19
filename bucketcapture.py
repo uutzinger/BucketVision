@@ -62,12 +62,12 @@ class BucketCapture:
         
         # start the thread to read frames from the video stream
         print("STARTING BucketCapture for " + self.name)
-        t = Thread(target=self.update, args=())
+        t = Thread(target=self.update, args=(30))
         t.daemon = True
         t.start()
         return self
 
-    def update(self):
+    def update(self,fps):
         print("BucketCapture for " + self.name + " RUNNING")
 
         # keep looping infinitely until the thread is stopped
@@ -83,7 +83,7 @@ class BucketCapture:
 
         self.camera.setResolution(self.width, self.height)
         self.camera.setPixelFormat(VideoMode.PixelFormat.kYUYV)
-        self.camera.setFPS(30)
+        self.camera.setFPS(fps)
         self.camera.setExposureManual(self.exposure);
         p = self.camera.enumerateVideoModes()
         for pi in p:
@@ -222,4 +222,4 @@ class BucketCapture:
 
     def isStopped(self):
         return self.stopped
-
+    
