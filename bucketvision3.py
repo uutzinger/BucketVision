@@ -60,14 +60,40 @@ from bucketdisplay import BucketDisplay
 
 import platform
 
+import argparse
+
+# Create arg parser
+parser = argparse.ArgumentParser()
+
+# Add IP Address argument
+parser.add_argument('-ip', '--ip-address', required=False, default='10.41.83.215', 
+help='IP Address for NetworkTable Server')
+
+# Parse args early so that it responds to --help
+arg_ip_address = parser.parse_args()
+
 # Address for NetworkTable server
 if (platform.system() == 'Windows'):
+    
+    # Set default IP address for Windows
     networkTableServer = '127.0.0.1'
 else:
-    #networkTableServer = '10.38.14.2' # On practice field
-    networkTableServer = '10.41.83.215' #Junior 2 radio to PC with OutlineViewer in Server Mode
-    #networkTableServer = '10.41.83.2' #competition addres
-    #networkTableServer = '192.168.0.103' # Home
+    
+    # Store the IP address in a dict
+    networkTableServer = vars(arg_ip_address)
+
+    # Get the IP address as a string
+    networkTableServer = networkTableServer['ip_address']
+
+    ## IP Addresses
+
+    # '10.41.83.2' # competition address
+    # This is the default
+
+    # '10.38.14.2' # On practice field
+    # '10.41.83.215' # Junior 2 radio to PC with OutlineViewer in Server Mode
+    # '192.168.0.103' # Home 
+    # Add your own with "py bucketvision3.py -ip <your address>"
 
 # Instances of GRIP created pipelines (they usually require some manual manipulation
 # but basically we would pass one or more of these into one or more image processors (threads)

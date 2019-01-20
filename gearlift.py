@@ -661,6 +661,3 @@ class GearLift:
                 continue
             output.append(contour)
         return output
-
-
-
