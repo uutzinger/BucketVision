@@ -168,8 +168,9 @@ gears = GearLift(bvTable)
 FRONT_CAM_GEAR_EXPOSURE = 0
 FRONT_CAM_NORMAL_EXPOSURE = -1   # Camera default
 
-frontCam = BucketCapture(name="FrontCam",src=0,width=320,height=240,exposure=FRONT_CAM_GEAR_EXPOSURE).start()    # start low for gears
-#backCam = BucketCapture(name="BackCam",src=1,width=320,height=240,exposure=FRONT_CAM_GEAR_EXPOSURE).start()    # start low for gears
+# Declare fps to 30 because explicit is good
+frontCam = BucketCapture(name="FrontCam",src=0,width=320,height=240,exposure=FRONT_CAM_GEAR_EXPOSURE, set_fps=30).start()    # start low for gears
+#backCam = BucketCapture(name="BackCam",src=1,width=320,height=240,exposure=FRONT_CAM_GEAR_EXPOSURE, set_fps=30).start()    # start low for gears
 
 print("Waiting for BucketCapture to start...")
 while ((frontCam.isStopped() == True)):

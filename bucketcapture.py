@@ -30,13 +30,16 @@ from framerate import FrameRate
 from frameduration import FrameDuration
 
 class BucketCapture:
-    def __init__(self,name,src,width,height,exposure):
+    def __init__(self,name,src,width,height,exposure,set_fps=30):
+
+        # Default fps to 30
 
         print("Creating BucketCapture for " + name)
         
         self._lock = Lock()
         self._condition = Condition()
         self.fps = FrameRate()
+        self.set_fps = set_fps
         self.duration = FrameDuration()
         self.name = name
         self.exposure = exposure
@@ -62,12 +65,12 @@ class BucketCapture:
         
         # start the thread to read frames from the video stream
         print("STARTING BucketCapture for " + self.name)
-        t = Thread(target=self.update, args=(30))
+        t = Thread(target=self.update(), args=())
         t.daemon = True
         t.start()
         return self
 
-    def update(self,fps):
+    def update(self):
         print("BucketCapture for " + self.name + " RUNNING")
 
         # keep looping infinitely until the thread is stopped
@@ -83,8 +86,8 @@ class BucketCapture:
 
         self.camera.setResolution(self.width, self.height)
         self.camera.setPixelFormat(VideoMode.PixelFormat.kYUYV)
-        self.camera.setFPS(fps)
-        self.camera.setExposureManual(self.exposure);
+        self.camera.setFPS(self.set_fps)
+        self.camera.setExposureManual(self.exposure)
         p = self.camera.enumerateVideoModes()
         for pi in p:
             print(pi.fps, pi.height, pi.width, pi.pixelFormat)
