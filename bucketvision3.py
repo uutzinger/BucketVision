@@ -58,7 +58,6 @@ from bucketcapture import BucketCapture     # Camera capture threads... may rena
 from bucketprocessor import BucketProcessor   # Image processing threads... has same basic structure (may merge classes)
 from bucketdisplay import BucketDisplay
 
-import platform
 import argparse
 
 # Create arg parser
