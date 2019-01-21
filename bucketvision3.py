@@ -59,7 +59,6 @@ from bucketprocessor import BucketProcessor   # Image processing threads... has 
 from bucketdisplay import BucketDisplay
 
 import platform
-
 import argparse
 
 # Create arg parser
