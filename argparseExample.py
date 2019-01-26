@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-ip', '--ip-address', required=False, default='10.41.83.2', 
 help='IP Address for NetworkTable Server')
 
-# Parse args early so that it responds to --help
+# Parse the args
 args = vars(parser.parse_args())
     
 # Get the IP address as a string
