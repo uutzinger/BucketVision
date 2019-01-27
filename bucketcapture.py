@@ -65,7 +65,7 @@ class BucketCapture:
         
         # start the thread to read frames from the video stream
         print("STARTING BucketCapture for " + self.name)
-        t = Thread(target=self.update(), args=())
+        t = Thread(target=self.update, args=())
         t.daemon = True
         t.start()
         return self
