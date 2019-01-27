@@ -77,6 +77,13 @@ args = vars(parser.parse_args())
     
 # Get the IP address as a string
 networkTableServer = args['ip_address']
+print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+print("NETWORK TABLE SERVER: ",networkTableServer)
+print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 
 
 # Instances of GRIP created pipelines (they usually require some manual manipulation
@@ -149,7 +156,7 @@ gears = GearLift(bvTable)
 # Our implementation is forced to use v4l2-ctl (Linux) to make the exposure control work because our OpenCV
 # port does not seem to play well with the exposure settings (produces either no answer or causes errors depending
 # on the camera used)
-FRONT_CAM_GEAR_EXPOSURE = 0
+FRONT_CAM_GEAR_EXPOSURE = 1
 FRONT_CAM_NORMAL_EXPOSURE = -1   # Camera default
 
 # Declare fps to 30 because explicit is good
