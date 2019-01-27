@@ -65,7 +65,7 @@ class BucketCapture:
         
         # start the thread to read frames from the video stream
         print("STARTING BucketCapture for " + self.name)
-        t = Thread(target=self.update(), args=())
+        t = Thread(target=self.update, args=())
         t.daemon = True
         t.start()
         return self
@@ -88,12 +88,11 @@ class BucketCapture:
         self.camera.setPixelFormat(VideoMode.PixelFormat.kYUYV)
         self.camera.setFPS(self.set_fps)
         self.camera.setExposureManual(self.exposure)
+        self.camera.setBrightness(1)
         p = self.camera.enumerateVideoModes()
         for pi in p:
             print(pi.fps, pi.height, pi.width, pi.pixelFormat)
             
-        #self.camera.setExposureManual(0)
-        #self.camera.setBrightness(100)
 
         # Get a CvSink. This will capture images from the camera
         cvSink = cs.getVideo()
