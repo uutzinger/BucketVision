@@ -152,6 +152,19 @@ class VisionTarget(object):
 		"""
 		return self.l_rect.center_pos.dist(self.r_rect.center_pos) / self.camera_hres
 
+	def dict(self):
+		"""
+		Returns a dict of important features about the vision target
+		"""
+		return {
+			'angle': self.angle,
+			'parallax': self.parallax,
+			'distance': self.distance,
+			'pos': self.pos,
+			'size': self.size
+		}
+
+
 class ProcessImage(object):
 	HSV_Top = (49, 0, 48)
 	HSV_Bot = (91, 255, 255)
