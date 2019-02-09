@@ -38,7 +38,11 @@ class Point(object):
 		"""
 		Point class, is a point
 		:param x: x pos (normally in mm)
-		:param y: y pos (normally in mm
+		:param y: y pos (normally in mm)
+
+		-- or --
+
+		:param x: (x, y) pos tuple
 		"""
 		if len(x) is 2:
 			self.x = x[0]
@@ -71,8 +75,21 @@ class RotatedRect(object):
 		self.height = max(rect[1])
 		self.angle = rect[2]
 
+	@property
+	def ratio(self):
+		""" Returns the ratio, always greater than 1 """
+		return self.height / self.width
+
 
 class VisionTarget(object):
+	# Data from 4.10 Vision Tragets
+	# a pair of 5½ in. (~14 cm) long by 2 in. (~5 cm) wide strips
+	rect_height = 5.5
+	rect_width = 2
+	rect_aspect_ratio = rect_height / rect_width
+	angle = 90 - (2 * 14.5) # angled toward each other at ~14.5 degrees
+	center_cap = 11.31 # cacualted based on specs
+
 	def __init__(self, left_rect, right_rect):
 		self.l_rect = RotatedRect(left_rect)
 		self.r_rect = RotatedRect(right_rect)
@@ -81,6 +98,24 @@ class VisionTarget(object):
 	def angle(self):
 		"""Angle from target 1 to 2"""
 		return self.l_rect.center_pos.angle(self.r_rect.center_pos)
+
+	@property
+	def parallax(self):
+		""" unitless parallax between the left and right strips,
+		returns Nan if we think one fo the rectangles is covered
+		negative if we are on the right side of the target
+		"""
+		aspect_tol = 0.1
+		# Check left rect ratio
+		if not (1 - aspect_tol) * self.rect_aspect_ratio < self.l_rect.ratio:
+			return float('NaN')
+
+		# Check right rect ratio
+		if not (1 - aspect_tol) * self.rect_aspect_ratio < self.r_rect.ratio:
+			return float('NaN')
+
+		return (1000 * (self.l_rect.height - self.r_rect.height)) / (self.l_rect.height + self.r_rect.height)
+
 
 
 class ProcessImage(object):
@@ -227,15 +262,17 @@ def single_image(image_path):
 	img = cv2.imread(image_path)
 	found_targets = proc.FindTarget(img)
 	img = proc.drawtargets(img, found_targets)
+	if len(found_targets) > 0:
+		print(found_targets[-1].parallax)
 	display_scaled_image('test', img, 0.5)
 
 
 if __name__ == '__main__':
-	folder = "..\\out2"
+	folder = "..\\out"
 	files = [os.path.join(folder, f) for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
 	images = [f for f in files if f.endswith(".png")]
 	for image in images:
-		print(image)
+		# print(image)
 		single_image(image)
 		cv2.waitKey(20)
 	cv2.waitKey(0)
