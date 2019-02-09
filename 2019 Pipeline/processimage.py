@@ -44,7 +44,7 @@ class Point(object):
 
 		:param x: (x, y) pos tuple
 		"""
-		if len(x) is 2:
+		if y is None:
 			self.x = x[0]
 			self.y = x[0]
 		else:
@@ -70,7 +70,7 @@ class Point(object):
 class RotatedRect(object):
 	def __init__(self, rect):
 		self.raw_rect = rect
-		self.center_pos = Point(rect[0])
+		self.center_pos = Point(rect[0][0], rect[0][1])
 		self.width = min(rect[1])
 		self.height = max(rect[1])
 		self.angle = rect[2]
@@ -85,10 +85,16 @@ class VisionTarget(object):
 	# Data from 4.10 Vision Tragets
 	# a pair of 5½ in. (~14 cm) long by 2 in. (~5 cm) wide strips
 	rect_height = 5.5
+	rect_height_m = rect_height * 0.0254
 	rect_width = 2
 	rect_aspect_ratio = rect_height / rect_width
-	angle = 90 - (2 * 14.5) # angled toward each other at ~14.5 degrees
-	center_cap = 11.31 # cacualted based on specs
+	angle = 90 - (2 * 14.5)  # angled toward each other at ~14.5 degrees
+	center_cap = 11.31  # cacualted based on specs
+
+	camera_hfov = 80  # degrees
+	camera_hres = 1920  # pixels
+	camera_vres = 1080  # pixels
+	camera_px_per_deg = camera_hres / camera_hfov
 
 	def __init__(self, left_rect, right_rect):
 		self.l_rect = RotatedRect(left_rect)
@@ -101,9 +107,11 @@ class VisionTarget(object):
 
 	@property
 	def parallax(self):
-		""" unitless parallax between the left and right strips,
+		"""
+		unitless parallax between the left and right strips,
 		returns Nan if we think one fo the rectangles is covered
 		negative if we are on the right side of the target
+		"should" be invariant of the distance to target
 		"""
 		aspect_tol = 0.1
 		# Check left rect ratio
@@ -116,7 +124,33 @@ class VisionTarget(object):
 
 		return (1000 * (self.l_rect.height - self.r_rect.height)) / (self.l_rect.height + self.r_rect.height)
 
+	@property
+	def distance(self):
+		"""
+		returns an estimated distance to target in meters
+		"""
+		pixel_height = (self.l_rect.height + self.r_rect.height) / 2.0
+		angle = pixel_height / self.camera_px_per_deg
+		dist_m = self.rect_height_m / math.tan(math.radians(angle))
+		return dist_m
 
+	@property
+	def pos(self):
+		"""
+		returns the position as a tuple (x, y) from 0 to 1
+		the origin is in the top left of the image (like OpenCV)
+		"""
+		pos_pix_x = (self.l_rect.center_pos.x + self.r_rect.center_pos.x) / 2.0
+		pos_pix_y = (self.l_rect.center_pos.y + self.r_rect.center_pos.y) / 2.0
+
+		return pos_pix_x / self.camera_hres, pos_pix_y / self.camera_vres
+
+	@property
+	def size(self):
+		"""
+		returns the distance between the targets as a fraction of the image width (from 0 to 1)
+		"""
+		return self.l_rect.center_pos.dist(self.r_rect.center_pos) / self.camera_hres
 
 class ProcessImage(object):
 	HSV_Top = (49, 0, 48)
@@ -226,10 +260,16 @@ class ProcessImage(object):
 
 	@staticmethod
 	def drawtargets(image, targets):
+		height, width, _ = image.shape
 		for index, target in enumerate(targets):
 			found_cont = [np.int0(cv2.boxPoints(r)) for r in [target.l_rect.raw_rect, target.r_rect.raw_rect]]
 			try:
-				image = cv2.drawContours(image, found_cont, -1, ProcessImage.colors[index], 3)
+				color = ProcessImage.colors[index]
+				image = cv2.drawContours(image, found_cont, -1, color, 3)
+				x, y = target.pos
+				image = cv2.circle(image, (int(x * width), int(y * height)),
+									int((target.size * width) / 4),
+									color, -1)
 			except IndexError:
 				# More targets than colors!
 				pass
@@ -263,12 +303,13 @@ def single_image(image_path):
 	found_targets = proc.FindTarget(img)
 	img = proc.drawtargets(img, found_targets)
 	if len(found_targets) > 0:
-		print(found_targets[-1].parallax)
+		pass
+		# print(found_targets[-1].l_rect.raw_rect)
 	display_scaled_image('test', img, 0.5)
 
 
 if __name__ == '__main__':
-	folder = "..\\out"
+	folder = "..\\out2"
 	files = [os.path.join(folder, f) for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
 	images = [f for f in files if f.endswith(".png")]
 	for image in images:
