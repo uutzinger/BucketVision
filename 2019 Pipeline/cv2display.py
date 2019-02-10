@@ -3,10 +3,11 @@ import logging
 
 import cv2
 
+
 class Cv2Display(threading.Thread):
-	def __init__(self, source=None, name="Camera0"):
+	def __init__(self, source=None, window_name="Camera0"):
 		self.logger = logging.getLogger("Cv2Display")
-		self.name = name
+		self.window_name = window_name
 		self.source = source
 
 		self._frame = None
@@ -14,6 +15,10 @@ class Cv2Display(threading.Thread):
 
 		self.stopped = True
 		threading.Thread.__init__(self)
+
+	@property
+	def frame(self):
+		return self._frame
 
 	@frame.setter
 	def frame(self, img):
@@ -29,12 +34,13 @@ class Cv2Display(threading.Thread):
 
 	def run(self):
 		while not self.stopped:
-			if self.source is None:
-				if self._new_frame:
-					cv2.imshow(self.name, self._frame)
-					self._new_frame = False
-			elif self.source.new_frame:
-				cv2.imshow(self.name, self._frame)
+			if self.source is not None:
+				if self.source.new_frame:
+					self.frame = self.source.frame
+			if self._new_frame:
+				cv2.imshow(self.window_name, self._frame)
+				self._new_frame = False
+			cv2.waitKey(1)
 		cv2.destroyAllWindows()
 
 
