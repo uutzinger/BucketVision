@@ -3,12 +3,6 @@ import logging
 
 import cv2
 
-try:
-	import networktables
-except ImportError:
-	pass
-
-
 class Cv2Display(threading.Thread):
 	def __init__(self, source=None, name="Camera0"):
 		self.logger = logging.getLogger("Cv2Display")
