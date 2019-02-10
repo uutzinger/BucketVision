@@ -160,7 +160,8 @@ class VisionTarget(object):
 			'angle': self.angle,
 			'parallax': self.parallax,
 			'distance': self.distance,
-			'pos': self.pos,
+			'pos_x': self.pos[0],
+			'pos_y': self.pos[1],
 			'size': self.size
 		}
 
