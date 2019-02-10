@@ -209,7 +209,7 @@ class ProcessImage(object):
 		threshold = cv2.inRange(HSV_image, self.HSV_Top, self.HSV_Bot)
 
 		# Find Contours
-		contours, _ = cv2.findContours(threshold, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
+		_, contours, _ = cv2.findContours(threshold, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
 
 		# Convert min area rect
 		min_rectangles = [cv2.minAreaRect(contour) for contour in contours]
