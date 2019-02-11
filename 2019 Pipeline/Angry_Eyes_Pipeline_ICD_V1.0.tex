@@ -1,0 +1,71 @@
+\documentclass[14pt,letterpaper]{report}
+\usepackage[utf8]{inputenc}
+\usepackage[left=1.00in, right=1.00in, top=0.50in, bottom=1.00in]{geometry}
+
+\usepackage{enumitem}
+
+\title{BucketVision “Angry Eyes” NetworkTables \protect\\ Interface Control Document v1.0}
+\makeatletter
+
+\begin{document}
+	\begin{center}
+		{\LARGE \@title}
+		
+		{\textit \@date}
+	\end{center}
+
+	\section*{Overview}
+		
+	The “Angry Eyes” computer vision pipeline detects and determines the position of the dual-slanted retroreflective targets used in the 2019 FRC game. As this software runs on a separate system from the main robot controls, it publishes the position of detected targets through the NetworkTables interface so other systems may act on that data. This document described the format of that data.
+		
+	\section*{Configurable Items}
+	
+	The top-level table under which all items are published (1 level below root) is passed in as an argument to all of the new pipeline components. In the current test code, this is named BucketVision but a table with any name may be passed in here.
+	
+	\noindent Each component of the new pipeline which publishes data in the NetworkTable accepts a parameter for the name, with which it will get or create a table by that name under the top-level table above. In the current test code, this is FrontCamera. While there is no logic to detect differing names, care should be taken to use the same camera name for all relevant components, otherwise data will be published under different tables.
+	
+	
+	\section*{Published Data}
+	
+	as noted above, these items are all published in a camera table which is in a top-level table
+	
+	\begin{itemize}[label={--}]
+		\item \textbf{NumTargets} - Number
+		
+		An integer number representing the number of targets detected. All the following arrays will be this length, and each index will represent a single target.
+		
+		\item \textbf{distance} - Number Array
+		
+		The estimated distance (in meters) between the camera and the target. Do not rely on its accuracy, it is calculated crudely.
+		
+		$$ \textrm{Average Height}_{px} = \frac{\textrm{Height}_L + \textrm{Height}_R}{2} $$
+		
+		$$ \textrm{Height}_{deg} = \frac{\textrm{Average Height}_{px}}{\textrm{Camera px per degree}} $$
+		
+		$$ dist = \frac{\textrm{Rectangle Height}}{\textrm{tan}^{-1}(\textrm{Height}_{deg})} $$
+		
+		\item \textbf{pos\_x} - Number Array
+		
+		The horizontal location of the target in normalized image-space coordinates, from 0 (left) to 1 (right).
+		
+		\item \textbf{pos\_y} - Number Array
+		
+		The vertical location of the target in normalized image-space coordinates, from 0 (top) to 1 (bottom).
+		
+		\item \textbf{size} - Number Array
+		
+		The distance between the left and right portions of the target as a fraction of the width of the image.	
+		
+		\item \textbf{parallax} - Number Array
+		
+		Scaled left right difference as a fraction of total height: (negative if camera is right of target)
+		
+		$$ \textbf{parallax} = (1000) \frac{Height\_left-Height\_right}{Height\_left+Height\_right} $$
+		 
+		\item \textbf{angle} - Number Array
+		
+		The angle (in radians) between the left and right portions of the target.
+		
+	\end{itemize}
+
+\end{document}
