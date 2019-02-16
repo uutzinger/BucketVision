@@ -3,6 +3,7 @@ import logging
 
 from cscore import CameraServer
 
+
 class CSDisplay(threading.Thread):
 	def __init__(self, source=None, stream_name="Camera0", res=(1920, 1080)):
 		self.logger = logging.getLogger("CSDisplay")
@@ -18,6 +19,7 @@ class CSDisplay(threading.Thread):
 
 		self.stopped = True
 		threading.Thread.__init__(self)
+
 	@property
 	def frame(self):
 		return self._frame

@@ -3,6 +3,11 @@ import logging
 
 import cv2
 
+import time
+
+import pyximport
+pyximport.install()
+
 from processimage import ProcessImage
 
 
@@ -31,7 +36,7 @@ class AngryProcesses(threading.Thread):
 	@frame.setter
 	def frame(self, img):
 		self._frame = img
-		self.new_frame = True
+		self._new_frame = True
 
 	@staticmethod
 	def dict_zip(*dicts):
@@ -47,7 +52,10 @@ class AngryProcesses(threading.Thread):
 				self.net_table.putNumberArray(key, value)
 
 	def draw_trgt(self):
-		return self.processor.drawtargets(self.source.frame, self.results)
+		if self.source is None:
+			return self.processor.drawtargets(self.frame, self.results)
+		else:
+			return self.processor.drawtargets(self.source.frame, self.results)
 
 	def stop(self):
 		self.stopped = True
@@ -59,34 +67,65 @@ class AngryProcesses(threading.Thread):
 		threading.Thread.start(self)
 
 	def run(self):
+		frame_time = 0
+		frame_hist = list()
 		while not self.stopped:
 			if self.source is not None:
 				if self.source.new_frame:
 					self._new_frame = True
 			if self._new_frame:
+				if len(frame_hist) % 10 == 0 and len(frame_hist) > 0:
+					pass
+					# print("angproc:{}".format((sum(frame_hist)/len(frame_hist))))
+				frame_time = time.time()
 				if self.source is not None:
 					self.results = self.processor.FindTarget(self.source.frame)
 				else:
 					self.results = self.processor.FindTarget(self.frame)
 				if self.net_table is not None:
-					if self.net_table.getBoolean('Overlay', False):
-						self.frame = self.draw_trgt()
-					else:
-						self.frame = self.source.frame
+					pass
+					# self.frame = self.draw_trgt()
+					# if self.net_table.getBoolean('Overlay', False):
+					# 	self.frame = self.draw_trgt()
+					# elif self.source is None:
+					#	pass
+					# else:
+					# 	self.frame = self.source.frame
+				elif self.source is not None:
+					self.frame = self.source.frame
+				else:
+					self.new_frame = True
 				self.update_results()
 				self._new_frame = False
+				frame_hist.append(time.time() - frame_time)
 
 
 if __name__ == '__main__':
+	from cv2capture import Cv2Capture
+	from cv2display import Cv2Display
 	logging.basicConfig(level=logging.DEBUG)
 
-	sink = Cv2Display()
+	print("Start Cam")
+
+	cam = Cv2Capture(camera_num=0, exposure=-2)
+	cam.start()
+
+	print("Start Proc")
+
+	proc = AngryProcesses(cam)
+	proc.start()
+
+	print("Start Display")
+
+	sink = Cv2Display(source=proc)
 	sink.start()
 
-	cam = cv2.VideoCapture(0)
-	while True:
-		ret_val, img = cam.read()
-		sink.frame = img
-		# Esc to quit
-		if cv2.waitKey(1) == 27:
-			break
+	print("Started Everything!")
+
+	try:
+		while True:
+			pass
+	except KeyboardInterrupt:
+		sink.stop()
+		proc.stop()
+		cam.stop()

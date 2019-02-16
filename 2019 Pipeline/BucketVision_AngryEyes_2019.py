@@ -2,11 +2,14 @@ import logging
 import argparse
 import time
 
+import cv2
+
 from networktables import NetworkTables
 
 from cv2capture import Cv2Capture
 from cv2display import Cv2Display
 from angryprocesses import AngryProcesses
+from class_mux import Class_Mux
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -17,6 +20,9 @@ if __name__ == '__main__':
 
 	parser.add_argument('-t', '--test', help='Test mode (uses cv2 display)', action='store_true')
 
+	parser.add_argument('-cam', '--num-cam', required=False, default=1,
+						help='Number of cameras to instantiate', type=int, choices=range(1, 10))
+
 	args = vars(parser.parse_args())
 
 	if not args['test']:
@@ -26,20 +32,41 @@ if __name__ == '__main__':
 
 	VisionTable = NetworkTables.getTable("BucketVision")
 	VisionTable.putString("BucketVisionState", "Starting")
-	CameraTable = VisionTable.getSubTable('FrontCamera')
 
-	frontCamera = Cv2Capture(camera_num=0, network_table=CameraTable, exposure=-10)
-	frontCamera.start()
+	source_list = list()
 
-	proc1 = AngryProcesses(frontCamera, network_table=CameraTable)
+	for i in range(args['num_cam']):
+		cap = Cv2Capture(camera_num=i, network_table=VisionTable, exposure=-10)
+		source_list.append(cap)
+		cap.start()
+
+	source_mux = Class_Mux(*source_list)
+
+	VisionTable.putString("BucketVisionState", "Started Capture")
+
+	proc1 = AngryProcesses(source_mux)
 	proc1.start()
 
-	if args['test']:
-		window_display = Cv2Display(source=proc1)
-		window_display.start()
-	else:
-		cs_display = CSDisplay(source=proc1)
-		cs_display.start()
+	VisionTable.putString("BucketVisionState", "Started Process")
 
-	while True:
-		pass
+	if args['test']:
+		window_display = Cv2Display(source=source_mux)
+		window_display.start()
+		VisionTable.putString("BucketVisionState", "Started CV2 Display")
+	else:
+		cs_display = CSDisplay(source=source_mux)
+		cs_display.start()
+		VisionTable.putString("BucketVisionState", "Started CS Display")
+
+	try:
+		VisionTable.putValue("CameraNum", 0)
+		while True:
+			source_mux.source_num = int(VisionTable.getEntry("CameraNum").value)
+
+	except KeyboardInterrupt:
+		if args['test']:
+			window_display.stop()
+		else:
+			cs_display.stop()
+		proc1.stop()
+
