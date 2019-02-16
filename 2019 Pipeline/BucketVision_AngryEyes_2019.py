@@ -11,6 +11,9 @@ from cv2display import Cv2Display
 from angryprocesses import AngryProcesses
 from class_mux import Class_Mux
 
+# run "proc_setup.py build_ext --inplace" in order to compile the target finder first
+# You will need to install cython first
+
 logging.basicConfig(level=logging.DEBUG)
 
 if __name__ == '__main__':
