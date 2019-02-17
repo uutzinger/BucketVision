@@ -44,7 +44,6 @@ class CSDisplay(threading.Thread):
 					self._new_frame = False
 			elif self.source.new_frame:
 				self.outstream.putFrame(self.source.frame)
-		cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':

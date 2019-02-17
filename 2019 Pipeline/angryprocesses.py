@@ -12,14 +12,19 @@ from processimage import ProcessImage
 
 
 class AngryProcesses(threading.Thread):
-	def __init__(self, source=None, network_table=None):
+	def __init__(self, source=None, network_table=None, debug_label=""):
 		self.logger = logging.getLogger("AngryProcesses")
 		self.net_table = network_table
 		self.source = source
+		self.debug_label = debug_label
 
 		self._frame = None
 		self._new_frame = False
 		self.new_frame = False
+		self.last_frame_time = 0.0
+		
+		if self.net_table is not None:
+			self.net_table.putNumber("LastFrameTime", 0.0)
 
 		self.processor = ProcessImage()
 
@@ -45,6 +50,11 @@ class AngryProcesses(threading.Thread):
 
 	def update_results(self):
 		if self.net_table is not None:
+			last_net_time = float(self.net_table.getEntry("LastFrameTime").value)
+			if last_net_time >= self.last_frame_time:
+				#print("\nAP: {}: net table ahead!".format(self.debug_label))
+				return
+			self.net_table.putNumber("LastFrameTime", self.last_frame_time)
 			self.net_table.putNumber("NumTargets", len(self.results))
 			result_data = self.dict_zip(*[r.dict() for r in self.results])
 			for key, value in result_data.items():
@@ -67,7 +77,6 @@ class AngryProcesses(threading.Thread):
 		threading.Thread.start(self)
 
 	def run(self):
-		frame_time = 0
 		frame_hist = list()
 		while not self.stopped:
 			if self.source is not None:
@@ -77,7 +86,8 @@ class AngryProcesses(threading.Thread):
 				if len(frame_hist) % 10 == 0 and len(frame_hist) > 0:
 					pass
 					# print("angproc:{}".format((sum(frame_hist)/len(frame_hist))))
-				frame_time = time.time()
+				self.last_frame_time = time.time()
+				#print("\nAP: {} gets frame at {}".format(self.debug_label, self.last_frame_time))
 				if self.source is not None:
 					self.results = self.processor.FindTarget(self.source.frame)
 				else:
@@ -97,7 +107,9 @@ class AngryProcesses(threading.Thread):
 					self.new_frame = True
 				self.update_results()
 				self._new_frame = False
-				frame_hist.append(time.time() - frame_time)
+				duration = time.time() - self.last_frame_time
+				frame_hist.append(duration)
+				#print("\nAP: {} done at {}".format(self.debug_label, time.time()))
 
 
 if __name__ == '__main__':

@@ -32,15 +32,29 @@ class Cv2Capture(threading.Thread):
 		self.frame_lock = threading.Lock()
 
 		self._frame = None
-		self.new_frame = False
+		self._new_frame = False
 
 		self.stopped = True
 
 		threading.Thread.__init__(self)
 
+
+	@property
+	def new_frame(self):
+		out = False
+		with self.frame_lock:
+			out = self._new_frame
+		return out
+
+	@new_frame.setter
+	def new_frame(self, val):
+		with self.frame_lock:
+			self._new_frame = val
+
 	@property
 	def frame(self):
-		self.new_frame = False
+		with self.frame_lock:
+			self._new_frame = False
 		# For maximum thread (or process) safety, you should copy the frame, but this is very expensive
 		return self._frame
 
@@ -141,8 +155,9 @@ class Cv2Capture(threading.Thread):
 				pass
 			with self.capture_lock:
 				_, img = self.cap.read()
-			self._frame = img
-			self.new_frame = True
+			with self.frame_lock:
+				self._frame = img
+				self._new_frame = True
 
 
 if __name__ == '__main__':
