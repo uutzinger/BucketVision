@@ -25,6 +25,19 @@ def display_scaled_image(name, image, scale):
 			(int(scale * width), int(scale * height)),
 			interpolation=cv2.INTER_CUBIC))
 
+cdef extract_contoures(image):
+		HSV_Top = (49, 0, 48)
+		HSV_Bot = (91, 255, 255)
+
+		HSV_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+		# HSV threshold
+		threshold = cv2.inRange(HSV_image, HSV_Top, HSV_Bot)
+
+		# Find Contours
+		_, contours, _ = cv2.findContours(threshold, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
+
+		return contours
 
 def point_dist(a, b):
 	x_1, y_1 = a
@@ -167,8 +180,6 @@ class VisionTarget(object):
 
 
 class ProcessImage(object):
-	HSV_Top = (49, 0, 48)
-	HSV_Bot = (91, 255, 255)
 	Min_Rect_Area = 0.0001
 	Max_Trgt_Ratio = 3
 	Rect_Ratio_Limit = 6
@@ -196,27 +207,22 @@ class ProcessImage(object):
 	]
 
 	def __init__(self):
+		self.frame_time = 0
+		self.frame_hist = list()
 		pass
 
 	def FindTarget(self, image):
 		height, width, _ = image.shape
 		image_area = height * width
 
-		# Convert BGR to HSV
-		HSV_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-
-		# HSV threshold
-		threshold = cv2.inRange(HSV_image, self.HSV_Top, self.HSV_Bot)
-
-		# Find Contours
-		_, contours, _ = cv2.findContours(threshold, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
+		contours = extract_contoures(image)
 
 		# Convert min area rect
 		min_rectangles = [cv2.minAreaRect(contour) for contour in contours]
-
 		# Filter Rectangles, and classify as left (leaning right) or right (leaning left)
 		right_rect = list()
 		left_rect = list()
+
 		for rect in min_rectangles:
 			width, height = rect[1]
 			rect_area = width * height
@@ -269,7 +275,6 @@ class ProcessImage(object):
 				del right_rect[r_index]
 
 		found_targets = [VisionTarget(t[0], t[1]) for t in rect_pairs]
-
 		return found_targets
 
 	@staticmethod
@@ -289,21 +294,28 @@ class ProcessImage(object):
 				pass
 		return image
 
+import time
+
+frame_times = list()
 
 def live_video():
 	proc = ProcessImage()
 
-	cam = cv2.VideoCapture(1)
+	cam = cv2.VideoCapture(0)
 	frame_width = 1920
 	frame_height = 1080
 
 	cam.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
 	cam.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
-	cam.set(cv2.CAP_PROP_EXPOSURE, -10)
+	cam.set(cv2.CAP_PROP_EXPOSURE, -2)
 
 	while True:
 		ret_val, img = cam.read()
-		img = proc.FindTarget(img)
+		start = time.time()
+		found_targets = proc.FindTarget(img)
+		img = proc.drawtargets(img, found_targets)
+		frame_times.append(time.time() - start)
+		print(sum(frame_times) / len(frame_times))
 		display_scaled_image('test', img, 0.5)
 		if cv2.waitKey(1) == 27:
 			break  # esc to quit
@@ -323,6 +335,7 @@ def single_image(image_path):
 
 
 if __name__ == '__main__':
+	live_video()
 	folder = "..\\out2"
 	files = [os.path.join(folder, f) for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
 	images = [f for f in files if f.endswith(".png")]
