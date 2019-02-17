@@ -5,12 +5,12 @@ class ClassMux(object):
 
 	def __getattr__(self, name):
 		if name in self.__dict__:
-			return self.__dict__['name']
+			return self.__dict__[name]
 		else:
 			return getattr(self.sources[self.source_num], name)
 	
 	def __setattr__(self, name, value):
 		if name in self.__dict__:
-			self.__dict__['name'] = value
+			self.__dict__[name] = value
 		else:
 			setattr(self.sources[self.source_num], name, value)

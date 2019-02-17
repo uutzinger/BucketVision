@@ -115,6 +115,7 @@ class Cv2Capture(threading.Thread):
 		self._exposure = int(val)
 		if self.cap_open:
 			with self.capture_lock:
+				self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1) # must disable auto exposure explicitly on some platforms
 				self.cap.set(cv2.CAP_PROP_EXPOSURE, int(val))
 			self.write_table_value("Exposure", int(val))
 		else:
