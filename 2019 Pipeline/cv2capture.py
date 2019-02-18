@@ -10,11 +10,10 @@ except ImportError:
 
 
 class Cv2Capture(threading.Thread):
-	def __init__(self, camera_num=0, res=(1920, 1080), network_table=None, exposure=None):
+	def __init__(self, camera_num=0, res=None, network_table=None, exposure=None):
 		self.logger = logging.getLogger("Cv2Capture{}".format(camera_num))
 		self.camera_num = camera_num
 		self.net_table = network_table
-		self.camera_res = res
 
 		# first vars
 		self._exposure = exposure
@@ -26,6 +25,11 @@ class Cv2Capture(threading.Thread):
 			self.write_table_value("Camera{}Status".format(camera_num),
 									"Failed to open camera {}!".format(camera_num),
 									level=logging.CRITICAL)
+		
+		if res is not None:
+			self.camera_res = res
+		else:
+			self.camera_res = (self.cap.get(cv2.CAP_PROP_FRAME_WIDTH), self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 		# Threading Locks
 		self.capture_lock = threading.Lock()

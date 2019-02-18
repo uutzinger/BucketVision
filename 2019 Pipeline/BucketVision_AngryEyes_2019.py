@@ -11,6 +11,9 @@ from cv2display import Cv2Display
 from angryprocesses import AngryProcesses
 from class_mux import ClassMux
 from mux1n import Mux1N
+from resizesource import ResizeSource
+
+from configs import configs
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -25,7 +28,7 @@ if __name__ == '__main__':
 						help='Number of cameras to instantiate', type=int, choices=range(1, 10))
 						
 	parser.add_argument('-proc', '--num-processors', required=False, default=4,
-						help='Number of processors to instantiate', type=int, choices=range(1, 10))
+						help='Number of processors to instantiate', type=int, choices=range(0, 10))
 
 	args = vars(parser.parse_args())
 
@@ -40,14 +43,14 @@ if __name__ == '__main__':
 	source_list = list()
 
 	for i in range(args['num_cam']):
-		cap = Cv2Capture(camera_num=i, network_table=VisionTable, exposure=-10)
+		cap = Cv2Capture(camera_num=i, network_table=VisionTable, exposure=-10, res=configs['camera_res'])
 		source_list.append(cap)
 		cap.start()
 
 	source_mux = ClassMux(*source_list)
 	output_mux = Mux1N(source_mux)
 	process_output = output_mux.create_output()
-	display_output = output_mux.create_output()
+	display_output = ResizeSource(output_mux.create_output(), res=configs['output_res'])
 
 	VisionTable.putString("BucketVisionState", "Started Capture")
 
