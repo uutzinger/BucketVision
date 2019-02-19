@@ -18,7 +18,10 @@ class Cv2Capture(threading.Thread):
 		# first vars
 		self._exposure = exposure
 
-		self.cap = cv2.VideoCapture(camera_num)
+
+		self.cap = cv2.VideoCapture()
+		self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))
+		self.cap.open(self.camera_num)
 		self.cap_open = self.cap.isOpened()
 		if self.cap_open is False:
 			self.cap_open = False
@@ -116,12 +119,12 @@ class Cv2Capture(threading.Thread):
 	def exposure(self, val):
 		if val is None:
 			return
-		self._exposure = int(val)
+		self._exposure = val
 		if self.cap_open:
 			with self.capture_lock:
-				self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1) # must disable auto exposure explicitly on some platforms
-				self.cap.set(cv2.CAP_PROP_EXPOSURE, int(val))
-			self.write_table_value("Exposure", int(val))
+				#self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1) # must disable auto exposure explicitly on some platforms
+				self.cap.set(cv2.CAP_PROP_EXPOSURE, val)
+			self.write_table_value("Exposure", val)
 		else:
 			self.write_table_value("Camera{}Status".format(self.camera_num),
 									"Failed to set exposure to {}!".format(val),

@@ -26,6 +26,8 @@ if __name__ == '__main__':
 
 	parser.add_argument('-cam', '--num-cam', required=False, default=1,
 						help='Number of cameras to instantiate', type=int, choices=range(1, 10))
+	parser.add_argument('-co', '--offs-cam', required=False, default=0,
+						help='First camera index to instantiate', type=int, choices=range(0, 10))
 						
 	parser.add_argument('-proc', '--num-processors', required=False, default=4,
 						help='Number of processors to instantiate', type=int, choices=range(0, 10))
@@ -43,7 +45,7 @@ if __name__ == '__main__':
 	source_list = list()
 
 	for i in range(args['num_cam']):
-		cap = Cv2Capture(camera_num=i, network_table=VisionTable, exposure=-10, res=configs['camera_res'])
+		cap = Cv2Capture(camera_num=i+args['offs_cam'], network_table=VisionTable, exposure=0.01, res=configs['camera_res'])
 		source_list.append(cap)
 		cap.start()
 
