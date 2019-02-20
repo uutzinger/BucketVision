@@ -12,6 +12,7 @@ from angryprocesses import AngryProcesses
 from class_mux import ClassMux
 from mux1n import Mux1N
 from resizesource import ResizeSource
+from overlaysource import OverlaySource
 
 from configs import configs
 
@@ -52,7 +53,7 @@ if __name__ == '__main__':
 	source_mux = ClassMux(*source_list)
 	output_mux = Mux1N(source_mux)
 	process_output = output_mux.create_output()
-	display_output = ResizeSource(output_mux.create_output(), res=configs['output_res'])
+	display_output = OverlaySource(ResizeSource(output_mux.create_output(), res=configs['output_res']))
 
 	VisionTable.putString("BucketVisionState", "Started Capture")
 
