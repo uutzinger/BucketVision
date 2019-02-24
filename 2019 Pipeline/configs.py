@@ -1,4 +1,5 @@
 configs = {
-	'camera_res': (1280, 720),
-	'output_res': (427, 240)
+	'camera_res': (320, 240),
+	'output_res': (320, 240),
+	'brigtness': 4
 }

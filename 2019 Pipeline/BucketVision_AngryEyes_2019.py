@@ -1,5 +1,6 @@
 import logging
 import argparse
+import os
 import time
 
 import cv2
@@ -75,6 +76,8 @@ if __name__ == '__main__':
 		cs_display = CSDisplay(source=display_output)
 		cs_display.start()
 		VisionTable.putString("BucketVisionState", "Started CS Display")
+
+	os.system("v4l2-ctl -c exposure_absolute={}".format(configs['brigtness']))
 
 	try:
 		VisionTable.putValue("CameraNum", 0)

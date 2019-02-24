@@ -4,6 +4,7 @@ import os
 import numpy as np
 import cv2
 
+from configs import configs
 
 def display_scaled_image(name, image, scale):
 	"""Function to display a scaled cv2 image
@@ -91,9 +92,9 @@ class VisionTarget(object):
 	angle = 90 - (2 * 14.5)  # angled toward each other at ~14.5 degrees
 	center_cap = 11.31  # cacualted based on specs
 
-	camera_hfov = 80  # degrees
-	camera_hres = 1920  # pixels
-	camera_vres = 1080  # pixels
+	camera_hfov = 80.0  # degrees
+	camera_hres = configs['camera_res'][0]  # pixels
+	camera_vres = configs['camera_res'][1]  # pixels
 	camera_px_per_deg = camera_hres / camera_hfov
 
 	def __init__(self, left_rect, right_rect):
@@ -115,12 +116,12 @@ class VisionTarget(object):
 		"""
 		aspect_tol = 0.1
 		# Check left rect ratio
-		if not (1 - aspect_tol) * self.rect_aspect_ratio < self.l_rect.ratio:
-			return float('NaN')
+		#if not (1 - aspect_tol) * self.rect_aspect_ratio < self.l_rect.ratio:
+		#	return float('NaN')
 
 		# Check right rect ratio
-		if not (1 - aspect_tol) * self.rect_aspect_ratio < self.r_rect.ratio:
-			return float('NaN')
+		#if not (1 - aspect_tol) * self.rect_aspect_ratio < self.r_rect.ratio:
+		#	return float('NaN')
 
 		return (1000 * (self.l_rect.height - self.r_rect.height)) / (self.l_rect.height + self.r_rect.height)
 
@@ -210,7 +211,7 @@ class ProcessImage(object):
 
 		# Find Contours
 		_, contours, _ = cv2.findContours(threshold, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
-
+		# print("proc:{}contoures".format(len(contours)))
 		# Convert min area rect
 		min_rectangles = [cv2.minAreaRect(contour) for contour in contours]
 
@@ -291,20 +292,22 @@ class ProcessImage(object):
 
 
 def live_video():
+	import os
+	from configs import configs
 	proc = ProcessImage()
 
-	cam = cv2.VideoCapture(1)
-	frame_width = 1920
-	frame_height = 1080
+	cam = cv2.VideoCapture(0)
+	frame_width = 320
+	frame_height = 240
 
 	cam.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
 	cam.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
 	cam.set(cv2.CAP_PROP_EXPOSURE, -10)
-
+	os.system("v4l2-ctl -c exposure_absolute={}".format(configs['brigtness']))
 	while True:
 		ret_val, img = cam.read()
-		img = proc.FindTarget(img)
-		display_scaled_image('test', img, 0.5)
+		res = proc.FindTarget(img)
+		display_scaled_image('test', proc.drawtargets(img, res), 1)
 		if cv2.waitKey(1) == 27:
 			break  # esc to quit
 	cam.release()
@@ -323,6 +326,8 @@ def single_image(image_path):
 
 
 if __name__ == '__main__':
+	live_video()
+	exit()
 	folder = "..\\out2"
 	files = [os.path.join(folder, f) for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
 	images = [f for f in files if f.endswith(".png")]

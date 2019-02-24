@@ -1,5 +1,6 @@
 import threading
 import logging
+import time
 
 import cv2
 
@@ -153,19 +154,26 @@ class Cv2Capture(threading.Thread):
 		threading.Thread.start(self)
 
 	def run(self):
+		frame_hist = list()
+		last_frame_time = time.time()
 		img = None
 		while not self.stopped:
+			if len(frame_hist) == 100:
+				print("Capture{}: {}fps".format(self.camera_num, 1/(sum(frame_hist)/len(frame_hist))))
+				frame_hist = list()
+			start_time = time.time()
 			# TODO: MAke this less crust, I would like to setup a callback
-			try:
-				if self._exposure != self.net_table.getEntry("Exposure").value:
-					self.exposure = self.net_table.getEntry("Exposure").value
-			except:
-				pass
+			#try:
+			#	if self._exposure != self.net_table.getEntry("Exposure").value:
+			#		self.exposure = self.net_table.getEntry("Exposure").value
+			#except:
+			#	pass
 			with self.capture_lock:
 				_, img = self.cap.read()
 			with self.frame_lock:
 				self._frame = img
 				self._new_frame = True
+			frame_hist.append(time.time() - start_time)
 
 
 if __name__ == '__main__':
