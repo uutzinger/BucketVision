@@ -4,6 +4,8 @@ import time
 
 import cv2
 
+from configs import configs
+
 try:
 	import networktables
 except ImportError:
@@ -11,7 +13,7 @@ except ImportError:
 
 
 class Cv2Capture(threading.Thread):
-	def __init__(self, camera_num=0, res=None, network_table=None, exposure=None):
+	def __init__(self, camera_num=0, res=(640, 480), network_table=None, exposure=None):
 		self.logger = logging.getLogger("Cv2Capture{}".format(camera_num))
 		self.camera_num = camera_num
 		self.net_table = network_table
@@ -154,6 +156,7 @@ class Cv2Capture(threading.Thread):
 		threading.Thread.start(self)
 
 	def run(self):
+		first_frame = True
 		frame_hist = list()
 		last_frame_time = time.time()
 		img = None
@@ -171,12 +174,16 @@ class Cv2Capture(threading.Thread):
 			with self.capture_lock:
 				_, img = self.cap.read()
 			with self.frame_lock:
-				self._frame = img
+				self._frame = img[int(self.camera_res[1]*(2/6)):int(self.camera_res[1]*(4/6)), :, :]
+				if first_frame:
+					first_frame = False
+					print(img.shape, self._frame.shape)
 				self._new_frame = True
 			frame_hist.append(time.time() - start_time)
 
 
 if __name__ == '__main__':
+	import os
 	from networktables import NetworkTables
 	logging.basicConfig(level=logging.DEBUG)
 
@@ -189,6 +196,8 @@ if __name__ == '__main__':
 	print("Starting Capture")
 	camera = Cv2Capture(network_table=FrontCameraTable)
 	camera.start()
+
+	os.system("v4l2-ctl -c exposure_absolute={}".format(configs['brigtness']))
 
 	print("Getting Frames")
 	while True:
