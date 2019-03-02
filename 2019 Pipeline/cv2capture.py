@@ -1,6 +1,7 @@
 import threading
 import logging
 import time
+import os
 
 import cv2
 
@@ -20,7 +21,6 @@ class Cv2Capture(threading.Thread):
 
 		# first vars
 		self._exposure = exposure
-
 
 		self.cap = cv2.VideoCapture()
 		self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))
@@ -45,7 +45,7 @@ class Cv2Capture(threading.Thread):
 		self._new_frame = False
 
 		self.stopped = True
-
+		self.exposure = exposure
 		threading.Thread.__init__(self)
 
 
@@ -112,21 +112,22 @@ class Cv2Capture(threading.Thread):
 
 	@property
 	def exposure(self):
-		if self.cap_open:
-			with self.capture_lock:
-				return self.cap.get(cv2.CAP_PROP_EXPOSURE)
-		else:
-			return float("NaN")
+		return self._exposure
 
 	@exposure.setter
 	def exposure(self, val):
 		if val is None:
 			return
+		val = int(val)
 		self._exposure = val
 		if self.cap_open:
 			with self.capture_lock:
-				#self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1) # must disable auto exposure explicitly on some platforms
-				self.cap.set(cv2.CAP_PROP_EXPOSURE, val)
+				if os.name == 'nt':
+					#self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1) # must disable auto exposure explicitly on some platforms
+					self.cap.set(cv2.CAP_PROP_EXPOSURE, val)
+				else:
+					os.system("v4l2-ctl -c exposure_absolute={}".format(val))
+					print("Exposure set to: {}".format(val))
 			self.write_table_value("Exposure", val)
 		else:
 			self.write_table_value("Camera{}Status".format(self.camera_num),
@@ -166,15 +167,15 @@ class Cv2Capture(threading.Thread):
 				frame_hist = list()
 			start_time = time.time()
 			# TODO: MAke this less crust, I would like to setup a callback
-			#try:
-			#	if self._exposure != self.net_table.getEntry("Exposure").value:
-			#		self.exposure = self.net_table.getEntry("Exposure").value
-			#except:
-			#	pass
+			try:
+				if self._exposure != self.net_table.getEntry("Exposure").value:
+					self.exposure = self.net_table.getEntry("Exposure").value
+			except:
+				pass
 			with self.capture_lock:
 				_, img = self.cap.read()
 			with self.frame_lock:
-				self._frame = img[int(self.camera_res[1]*(2/6)):int(self.camera_res[1]*(4/6)), :, :]
+				self._frame = img[int(self.camera_res[1]*(configs['crop_top'])):int(self.camera_res[1]*(configs['crop_bot'])), :, :]
 				if first_frame:
 					first_frame = False
 					print(img.shape, self._frame.shape)

@@ -57,7 +57,7 @@ class AngryProcesses(threading.Thread):
 			self.net_table.putNumber("LastFrameTime", self.last_frame_time)
 			self.net_table.putNumber("CurrFrameTime", time.time())
 			result_data = self.dict_zip(*[r.dict() for r in self.results])
-			self.net_table.putNumber("NumTargets", len(result_data))
+			self.net_table.putNumber("NumTargets", len(self.results))
 			for key, value in result_data.items():
 				# Here we assume that every param is a number of some kind
 				self.net_table.putNumberArray(key, value)

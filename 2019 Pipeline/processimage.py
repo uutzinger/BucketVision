@@ -294,6 +294,7 @@ class ProcessImage(object):
 def live_video():
 	import os
 	from configs import configs
+	import time
 	proc = ProcessImage()
 
 	cam = cv2.VideoCapture(0)
@@ -303,13 +304,21 @@ def live_video():
 	cam.set(cv2.CAP_PROP_FRAME_WIDTH, frame_width)
 	cam.set(cv2.CAP_PROP_FRAME_HEIGHT, frame_height)
 	cam.set(cv2.CAP_PROP_EXPOSURE, -10)
-	os.system("v4l2-ctl -c exposure_absolute={}".format(configs['brigtness']))
+	os.system("v4l2-ctl -c exposure_absolute={}".format(10))
+	frame_time = list()
 	while True:
+		start = time.time()
+		if len(frame_time) == 10:
+			print("FPS:{}".format(1/sum(frame_time)))
+			frame_time = list()
 		ret_val, img = cam.read()
+		camera_res = img.shape
+		img = img[int(camera_res[1]*(configs['crop_top'])):int(camera_res[1]*(configs['crop_bot'])), :, :]
 		res = proc.FindTarget(img)
 		display_scaled_image('test', proc.drawtargets(img, res), 1)
 		if cv2.waitKey(1) == 27:
 			break  # esc to quit
+		frame_time.append(time.time() - start)
 	cam.release()
 	cv2.destroyAllWindows()
 

@@ -17,9 +17,6 @@ from overlaysource import OverlaySource
 
 from configs import configs
 
-# run "proc_setup.py build_ext --inplace" in order to compile the target finder first
-# You will need to install cython first
-
 logging.basicConfig(level=logging.DEBUG)
 
 if __name__ == '__main__':
@@ -79,8 +76,6 @@ if __name__ == '__main__':
 		cs_display = CSDisplay(source=display_output)
 		cs_display.start()
 		VisionTable.putString("BucketVisionState", "Started CS Display")
-
-	os.system("v4l2-ctl -c exposure_absolute={}".format(configs['brigtness']))
 
 	try:
 		VisionTable.putValue("CameraNum", 0)

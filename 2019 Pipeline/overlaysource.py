@@ -9,7 +9,7 @@ class OverlaySource(object):
 		else:
 			self.width = int(self._base_source.width)
 			self.height = int(self._base_source.height)
-	
+
 	@property
 	def frame(self):
 		return cv2.line(self._base_source.frame, (self.width//2, self.height), (self.width//2, 0), (0, 255, 0), 2)
