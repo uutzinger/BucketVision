@@ -123,11 +123,11 @@ class Cv2Capture(threading.Thread):
 		if self.cap_open:
 			with self.capture_lock:
 				if os.name == 'nt':
-					#self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1) # must disable auto exposure explicitly on some platforms
+					# self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1) # must disable auto exposure explicitly on some platforms
 					self.cap.set(cv2.CAP_PROP_EXPOSURE, val)
 				else:
-					os.system("v4l2-ctl -c exposure_absolute={}".format(val))
-					print("Exposure set to: {}".format(val))
+					os.system("v4l2-ctl -c exposure_absolute={} -d {}".format(val,self.camera_num))
+					print("!! Exposure set to: {}".format(val))
 			self.write_table_value("Exposure", val)
 		else:
 			self.write_table_value("Camera{}Status".format(self.camera_num),
