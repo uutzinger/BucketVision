@@ -170,12 +170,13 @@ class Cv2Capture(threading.Thread):
 			try:
 				if self._exposure != self.net_table.getEntry("Exposure").value:
 					self.exposure = self.net_table.getEntry("Exposure").value
+				pass
 			except:
 				pass
 			with self.capture_lock:
 				_, img = self.cap.read()
 			with self.frame_lock:
-				self._frame = img[int(self.camera_res[1]*(configs['crop_top'])):int(self.camera_res[1]*(configs['crop_bot'])), :, :]
+				self._frame = img
 				if first_frame:
 					first_frame = False
 					print(img.shape, self._frame.shape)

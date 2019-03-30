@@ -20,6 +20,7 @@ from configs import configs
 logging.basicConfig(level=logging.DEBUG)
 
 if __name__ == '__main__':
+	os.system("v4l2-ctl -c exposure_absolute=10")
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-ip', '--ip-address', required=False, default='10.41.83.2',
 						help='IP Address for NetworkTable Server')
@@ -43,14 +44,13 @@ if __name__ == '__main__':
 
 	VisionTable = NetworkTables.getTable("BucketVision")
 	VisionTable.putString("BucketVisionState", "Starting")
-	VisionTable.putNumber("Exposure",50.0)
+
 	source_list = list()
 
 	for i in range(args['num_cam']):
 		cap = Cv2Capture(camera_num=i+args['offs_cam'], network_table=VisionTable, exposure=0.01, res=configs['camera_res'])
 		source_list.append(cap)
 		cap.start()
-		cap.exposure = 10
 
 	source_mux = ClassMux(*source_list)
 	output_mux = Mux1N(source_mux)
@@ -68,16 +68,7 @@ if __name__ == '__main__':
 
 
 	VisionTable.putString("BucketVisionState", "Started Process")
-
-	if args['test']:
-		window_display = Cv2Display(source=display_output)
-		window_display.start()
-		VisionTable.putString("BucketVisionState", "Started CV2 Display")
-	else:
-		cs_display = CSDisplay(source=display_output, network_table=VisionTable)
-		cs_display.start()
-		VisionTable.putString("BucketVisionState", "Started CS Display")
-
+	os.system("v4l2-ctl -c exposure_absolute=10")
 	try:
 		VisionTable.putValue("CameraNum", 0)
 		while True:

@@ -5,11 +5,8 @@ import cv2
 
 import time
 
-import pyximport
-pyximport.install()
-
 from processimage import ProcessImage
-
+from configs import configs
 
 class AngryProcesses(threading.Thread):
 	def __init__(self, source=None, network_table=None, debug_label=""):
@@ -30,6 +27,7 @@ class AngryProcesses(threading.Thread):
 
 		self.results = list()
 
+		self.camera_res = configs['camera_res']
 		self.stopped = True
 		threading.Thread.__init__(self)
 
@@ -83,6 +81,7 @@ class AngryProcesses(threading.Thread):
 			if self.source is not None:
 				if self.source.new_frame:
 					self._new_frame = True
+			#continue
 			if self._new_frame:
 				if len(frame_hist) == 10:
 					print("angproc:{}".format(1/(sum(frame_hist)/len(frame_hist))))
@@ -90,9 +89,12 @@ class AngryProcesses(threading.Thread):
 				self.last_frame_time = time.time()
 				#print("\nAP: {} gets frame at {}".format(self.debug_label, self.last_frame_time))
 				if self.source is not None:
-					self.results = self.processor.FindTarget(self.source.frame)
+					frame = self.source.frame
 				else:
-					self.results = self.processor.FindTarget(self.frame)
+					frame = self.frame
+				crop_top = int(self.camera_res[1]*configs['crop_top'])
+				crop_bot = int(self.camera_res[1]*configs['crop_bot'])
+				self.results = self.processor.FindTarget(frame[crop_top:crop_bot, :, :])
 				if self.net_table is not None:
 					pass
 					# self.frame = self.draw_trgt()
