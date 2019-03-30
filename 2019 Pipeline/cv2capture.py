@@ -1,7 +1,11 @@
 import threading
 import logging
+import time
+import os
 
 import cv2
+
+from configs import configs
 
 try:
 	import networktables
@@ -10,37 +14,57 @@ except ImportError:
 
 
 class Cv2Capture(threading.Thread):
-	def __init__(self, camera_num=0, res=(1920, 1080), network_table=None, exposure=None):
+	def __init__(self, camera_num=0, res=(640, 480), network_table=None, exposure=None):
 		self.logger = logging.getLogger("Cv2Capture{}".format(camera_num))
 		self.camera_num = camera_num
 		self.net_table = network_table
-		self.camera_res = res
 
 		# first vars
 		self._exposure = exposure
 
-		self.cap = cv2.VideoCapture(camera_num)
+		self.cap = cv2.VideoCapture()
+		self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))
+		self.cap.open(self.camera_num)
 		self.cap_open = self.cap.isOpened()
 		if self.cap_open is False:
 			self.cap_open = False
 			self.write_table_value("Camera{}Status".format(camera_num),
 									"Failed to open camera {}!".format(camera_num),
 									level=logging.CRITICAL)
+		
+		if res is not None:
+			self.camera_res = res
+		else:
+			self.camera_res = (self.cap.get(cv2.CAP_PROP_FRAME_WIDTH), self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
 		# Threading Locks
 		self.capture_lock = threading.Lock()
 		self.frame_lock = threading.Lock()
 
 		self._frame = None
-		self.new_frame = False
+		self._new_frame = False
 
 		self.stopped = True
-
+		self.exposure = exposure
 		threading.Thread.__init__(self)
+
+
+	@property
+	def new_frame(self):
+		out = False
+		with self.frame_lock:
+			out = self._new_frame
+		return out
+
+	@new_frame.setter
+	def new_frame(self, val):
+		with self.frame_lock:
+			self._new_frame = val
 
 	@property
 	def frame(self):
-		self.new_frame = False
+		with self.frame_lock:
+			self._new_frame = False
 		# For maximum thread (or process) safety, you should copy the frame, but this is very expensive
 		return self._frame
 
@@ -88,21 +112,23 @@ class Cv2Capture(threading.Thread):
 
 	@property
 	def exposure(self):
-		if self.cap_open:
-			with self.capture_lock:
-				return self.cap.get(cv2.CAP_PROP_EXPOSURE)
-		else:
-			return float("NaN")
+		return self._exposure
 
 	@exposure.setter
 	def exposure(self, val):
 		if val is None:
 			return
-		self._exposure = int(val)
+		val = int(val)
+		self._exposure = val
 		if self.cap_open:
 			with self.capture_lock:
-				self.cap.set(cv2.CAP_PROP_EXPOSURE, int(val))
-			self.write_table_value("Exposure", int(val))
+				if os.name == 'nt':
+					# self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1) # must disable auto exposure explicitly on some platforms
+					self.cap.set(cv2.CAP_PROP_EXPOSURE, val)
+				else:
+					os.system("v4l2-ctl -c exposure_absolute={} -d {}".format(val,self.camera_num))
+					print("!! Exposure set to: {}".format(val))
+			self.write_table_value("Exposure", val)
 		else:
 			self.write_table_value("Camera{}Status".format(self.camera_num),
 									"Failed to set exposure to {}!".format(val),
@@ -131,8 +157,15 @@ class Cv2Capture(threading.Thread):
 		threading.Thread.start(self)
 
 	def run(self):
+		first_frame = True
+		frame_hist = list()
+		last_frame_time = time.time()
 		img = None
 		while not self.stopped:
+			if len(frame_hist) == 100:
+				print("Capture{}: {}fps".format(self.camera_num, 1/(sum(frame_hist)/len(frame_hist))))
+				frame_hist = list()
+			start_time = time.time()
 			# TODO: MAke this less crust, I would like to setup a callback
 			try:
 				if self._exposure != self.net_table.getEntry("Exposure").value:
@@ -141,11 +174,17 @@ class Cv2Capture(threading.Thread):
 				pass
 			with self.capture_lock:
 				_, img = self.cap.read()
-			self._frame = img
-			self.new_frame = True
+			with self.frame_lock:
+				self._frame = img[int(self.camera_res[1]*(configs['crop_top'])):int(self.camera_res[1]*(configs['crop_bot'])), :, :]
+				if first_frame:
+					first_frame = False
+					print(img.shape, self._frame.shape)
+				self._new_frame = True
+			frame_hist.append(time.time() - start_time)
 
 
 if __name__ == '__main__':
+	import os
 	from networktables import NetworkTables
 	logging.basicConfig(level=logging.DEBUG)
 
@@ -158,6 +197,8 @@ if __name__ == '__main__':
 	print("Starting Capture")
 	camera = Cv2Capture(network_table=FrontCameraTable)
 	camera.start()
+
+	os.system("v4l2-ctl -c exposure_absolute={}".format(configs['brigtness']))
 
 	print("Getting Frames")
 	while True:

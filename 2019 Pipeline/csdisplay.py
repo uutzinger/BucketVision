@@ -3,21 +3,28 @@ import logging
 
 from cscore import CameraServer
 
+
 class CSDisplay(threading.Thread):
-	def __init__(self, source=None, stream_name="Camera0", res=(1920, 1080)):
+	def __init__(self, source=None, stream_name="Camera0", res=None):
 		self.logger = logging.getLogger("CSDisplay")
 		self.stream_name = stream_name
 		self.source = source
-		self.output_res = res
+		if res is not None:
+			self.output_width = res[0]
+			self.output_height = res[1]
+		else:
+			self.output_width = int(self.source.width)
+			self.output_height = int(self.source.height)
 		
 		cs = CameraServer.getInstance()
-		self.outstream = cs.putVideo(self.stream_name, self.output_res[0], self.output_res[1])
+		self.outstream = cs.putVideo(self.stream_name, self.output_width, self.output_height)
 
 		self._frame = None
 		self._new_frame = False
 
 		self.stopped = True
 		threading.Thread.__init__(self)
+
 	@property
 	def frame(self):
 		return self._frame
@@ -42,7 +49,6 @@ class CSDisplay(threading.Thread):
 					self._new_frame = False
 			elif self.source.new_frame:
 				self.outstream.putFrame(self.source.frame)
-		cv2.destroyAllWindows()
 
 
 if __name__ == '__main__':
