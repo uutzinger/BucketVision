@@ -110,10 +110,8 @@ class CSDisplay(Thread):
 
 if __name__ == '__main__':
 	logging.basicConfig(level=logging.DEBUG)
-
 	sink = CSDisplay()
 	sink.start()
-
 	import cv2
 	cam = cv2.VideoCapture(0)
 	while True:

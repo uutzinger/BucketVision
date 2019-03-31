@@ -1,9 +1,9 @@
-from threading import Thread
+from   threading import Thread
 import logging
 import cv2
 import time
-from processimage import ProcessImage
-from configs import configs
+from   processimage import ProcessImage
+from   configs import configs
 
 class AngryProcesses(Thread):
     def __init__(self, source=None, network_table=None, debug_label=""):
@@ -68,14 +68,11 @@ class AngryProcesses(Thread):
 
     def start(self):
         self.stopped = False
-        if self.net_table is not None: 
+        if self.net_table is not None:
             self.net_table.putBoolean('Overlay', False)
-        # Thread.start(self)
-        t = Thread(target=self.update, args=())
-        t.daemon = True
-        t.start()
-        
-    def update(self):
+		Thread.start(self)
+
+    def run(self):
         Target_Timing_hist = list()
         start_time = time.time()
         num_frames = 0
