@@ -1,4 +1,4 @@
-import cv2
+from cv2 import resize
 
 class ResizeSource(object):
 	def __init__(self, base_source, res=None):
@@ -12,7 +12,7 @@ class ResizeSource(object):
 	
 	@property
 	def frame(self):
-		return cv2.resize(self._base_source.frame, (self.width, self.height))
+        return resize(self._base_source.frame, (self.width, self.height))
 
 	@property
 	def exposure(self):

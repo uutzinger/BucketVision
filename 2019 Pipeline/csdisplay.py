@@ -1,4 +1,4 @@
-import threading
+from threading import Thread
 import logging
 
 import cv2
@@ -6,7 +6,8 @@ import cv2
 from cscore import CameraServer
 
 
-class CSDisplay(threading.Thread):
+class CSDisplay(Thread):
+
 	colors = [
 		(75, 25, 230),
 		(25, 225, 255),
@@ -47,7 +48,7 @@ class CSDisplay(threading.Thread):
 		self.net_table = network_table
 
 		self.stopped = True
-		threading.Thread.__init__(self)
+		Thread.__init__(self)
 
 	@property
 	def frame(self):
@@ -63,7 +64,7 @@ class CSDisplay(threading.Thread):
 
 	def start(self):
 		self.stopped = False
-		threading.Thread.start(self)
+		Thread.start(self)
 
 	@staticmethod
 	def NetTableVisionGet(net_table):
