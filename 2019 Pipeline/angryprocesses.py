@@ -70,7 +70,7 @@ class AngryProcesses(Thread):
         self.stopped = False
         if self.net_table is not None:
             self.net_table.putBoolean('Overlay', False)
-		Thread.start(self)
+        Thread.start(self)
 
     def run(self):
         Target_Timing_hist = list()
@@ -91,8 +91,8 @@ class AngryProcesses(Thread):
                     frame = self.source.frame
                 else:
                     frame = self.frame
-				crop_top = int(self.camera_res[1]*configs['crop_top'])
-				crop_bot = int(self.camera_res[1]*configs['crop_bot'])
+                crop_top = int(self.camera_res[1]*configs['crop_top'])
+                crop_bot = int(self.camera_res[1]*configs['crop_bot'])
                 self.results = self.processor.FindTarget(frame[crop_top:crop_bot, :, :])
                 Target_Timing_hist.append((time.time() - tmp_s))
                 if len(Target_Timing_hist) >= 50:

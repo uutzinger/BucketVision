@@ -159,8 +159,8 @@ class USBCapture(Thread):
         num_frames = 0
         img = None
         while not self.stopped:
-            if (time.time() - start.time) >= 1.0:
-                print("Capture{}: {}fps".format(self.camera_num, num_frames))
+            if (time.time() - start_time) >= 5.0:
+                print("Capture{}: {}fps".format(self.camera_num, num_frames/5.0))
                 num_frames = 0
                 start_time = time.time()
             # TODO: Make this less crust, I would like to setup a callback

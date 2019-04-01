@@ -308,7 +308,7 @@ class CSICapture(Thread):
                     self.camera.awb_gains  = val
                     self.write_table_value("AWB Gains", val)
                 else:
-                    selfe.camera.awb_gains = (val, val)
+                    self.camera.awb_gains = (val, val)
                     self.write_table_value("AWB Gains", (val, val))
         else:
             self.write_table_value("Camera{}Status".format(self.camera_num), "Failed to set AWB Gains to {}!".format(val), level=logging.CRITICAL)
