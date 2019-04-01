@@ -7,7 +7,7 @@ import cv2
 
 from networktables import NetworkTables
 
-from usbcapture import USBCapture
+from cv2capture import Cv2Capture
 from cv2display import Cv2Display
 from angryprocesses import AngryProcesses
 from class_mux import ClassMux

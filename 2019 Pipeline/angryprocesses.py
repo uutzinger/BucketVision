@@ -117,13 +117,13 @@ class AngryProcesses(Thread):
                 #print("\nAP: {} done at {}".format(self.debug_label, time.time()))
 
 if __name__ == '__main__':
-    from usbcapture import USBCapture
+    from cv2capture import Cv2Capture
     from cv2display import Cv2Display
     logging.basicConfig(level=logging.DEBUG)
 
     print("Start Cam")
 
-    cam = USBCapture(camera_num=0, exposure=-2)
+    cam = Cv2Capture(camera_num=0, exposure=-2)
     cam.start()
 
     print("Start Proc")

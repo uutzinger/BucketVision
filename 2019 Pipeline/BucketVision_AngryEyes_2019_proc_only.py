@@ -7,7 +7,7 @@ import cv2
 
 from networktables import NetworkTables
 
-from usbcapture import USBCapture
+from cv2capture import Cv2Capture
 from cv2display import Cv2Display
 from angryprocesses import AngryProcesses
 from class_mux import ClassMux
@@ -48,7 +48,7 @@ if __name__ == '__main__':
 	source_list = list()
 
 	for i in range(args['num_cam']):
-		cap = USBCapture(camera_num=i+args['offs_cam'], network_table=VisionTable, exposure=0.01, res=configs['camera_res'])
+		cap = Cv2Capture(camera_num=i+args['offs_cam'], network_table=VisionTable, exposure=0.01, res=configs['camera_res'])
 		source_list.append(cap)
 		cap.start()
 

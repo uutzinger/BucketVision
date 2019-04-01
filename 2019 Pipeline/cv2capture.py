@@ -10,7 +10,7 @@ try:
 except ImportError:
     pass
 
-class USBCapture(Thread):
+class Cv2Capture(Thread):
     def __init__(self, camera_num=0, res=(640, 480), network_table=None, exposure=None):
         self.logger = logging.getLogger("USBCapture{}".format(camera_num))
         self.camera_num = camera_num
@@ -190,7 +190,7 @@ if __name__ == '__main__':
     FrontCameraTable = VisionTable.getSubTable('FrontCamera')
 
     print("Starting Capture")
-    camera = USBCapture(network_table=FrontCameraTable)
+    camera = Cv2Capture(network_table=FrontCameraTable)
     camera.start()
 
     os.system("v4l2-ctl -c exposure_absolute={}".format(configs['exposure']))

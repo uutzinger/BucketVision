@@ -13,7 +13,7 @@ from framerate import FrameRate
 
 import argparse
 
-from usbcapture import USBCapture
+from cv2capture import Cv2Capture
 from csdisplay import CSDisplay
 
 import msvcrt
@@ -54,7 +54,7 @@ bvTable.putString("BucketVisionState","Starting")
 
 
 # Capture Setup
-camera = USBCapture(camera_num=0, res=(320, 240), network_table=bvTable, exposure=-1)
+camera = Cv2Capture(camera_num=0, res=(320, 240), network_table=bvTable, exposure=-1)
 camera.start()
 
 print("Waiting for BucketCapture to start...")
