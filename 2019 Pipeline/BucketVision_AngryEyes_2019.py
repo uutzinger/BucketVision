@@ -5,6 +5,7 @@ import time
 
 import cv2
 
+import threading
 from networktables import NetworkTables
 
 from cv2capture import Cv2Capture
@@ -19,8 +20,17 @@ from configs import configs
 
 logging.basicConfig(level=logging.DEBUG)
 
+# used to wait till network tables is initalized
+def connectionListener(connected, info):
+	print(info, '; Connected=%s' % connected)
+	with cond:
+		notified[0] = True
+		cond.notify()
+
 if __name__ == '__main__':
+	# add parse arguments
 	parser = argparse.ArgumentParser()
+
 	parser.add_argument('-ip', '--ip-address', required=False, default='10.41.83.2',
 						help='IP Address for NetworkTable Server')
 
@@ -36,10 +46,23 @@ if __name__ == '__main__':
 
 	args = vars(parser.parse_args())
 
+	# don't run in test mode if not specified
 	if not args['test']:
 		from csdisplay import CSDisplay
+	
 
+	cond = threading.Condition()
+	notified = [False]
+	# init networktables
 	NetworkTables.initialize(server=args['ip_address'])
+	# add a listener for connection
+	NetworkTables.addConnectionListener(connectionListener, immediateNotify=True)
+
+	# if not connected then block and wait
+	with cond:
+		print("Waiting")
+		if not notified[0]:
+			cond.wait()	
 
 	VisionTable = NetworkTables.getTable("BucketVision")
 	VisionTable.putString("BucketVisionState", "Starting")
@@ -92,4 +115,3 @@ if __name__ == '__main__':
 			proc.stop()
 		for cap in source_list:
 			cap.stop()
-
