@@ -18,7 +18,7 @@ except ImportError:
     pass
 
 class CSICapture(Thread):
-    def __init__(self, camera_num=0, res=None, network_table=None, exp=None, frate=None):
+    def __init__(self, camera_num=0, res=None, network_table=None, exposure=None, frate=None):
         #
         self.logger     = logging.getLogger("CSICapture{}".format(camera_num))
         self.camera_num = camera_num
@@ -40,9 +40,10 @@ class CSICapture(Thread):
         # Buffer
         self.rawCapture = PiRGBArray(self.camera, size=self.resolution)
         # Exposure Time
-        if exp is not None:  
-            self.exposure = exp
-        else: self.exposure = configs['CSIexposure']
+        if exposure is not None:  
+            self._exposure = exposure
+        else: self._exposure = configs['CSIexposure']
+        self.exposure = self._exposure
         # Frame Rate
         if frate is not None:
             self.framerate = frate
@@ -133,7 +134,8 @@ class CSICapture(Thread):
                 start_time = time.time()
             # Adjust exposure if requested via network tables
             try:
-                if self._exposure != self.net_table.getEntry("Exposure").value: self.exposure = self.net_table.getEntry("Exposure").value
+                if self._exposure != self.net_table.getEntry("Exposure").value: 
+                    self.exposure = self.net_table.getEntry("Exposure").value
             except: pass
             # Get latest image
             with self.capture_lock:

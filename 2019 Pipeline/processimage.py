@@ -98,7 +98,7 @@ class VisionTarget(object):
     def __init__(self, left_rect, right_rect):
         self.l_rect = RotatedRect(left_rect)
         self.r_rect = RotatedRect(right_rect)
-
+        
     @property
     def angle(self):
         """Angle from target 1 to 2"""
@@ -196,7 +196,7 @@ class ProcessImage(object):
     ]
 
     def __init__(self):
-        pass
+        (self.cv2major, self.cv2minor, _) = cv2.__version__.split(".")
 
     def FindTarget(self, image):
         height, width, _ = image.shape
@@ -215,7 +215,10 @@ class ProcessImage(object):
         # Find Contours 
         # 252, 76, 141, 48, 114
         #e3 = cv2.getTickCount()
-        contours, _ = cv2.findContours(threshold, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
+        if self.cv2major == '4':
+            contours, _ = cv2.findContours(threshold, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
+        else:
+            _, contours, _ = cv2.findContours(threshold, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
         # print("proc:{}contoures".format(len(contours)))
         # Filter Contours that are smaller than threshold 
         # 46,41, 0.1, 17

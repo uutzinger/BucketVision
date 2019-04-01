@@ -7,7 +7,7 @@ import cv2
 
 from networktables import NetworkTables
 
-from usbcapture import USBCapture
+from csicapture import CSICapture
 from cv2display import Cv2Display
 from angryprocesses import AngryProcesses
 from class_mux import ClassMux
@@ -20,7 +20,6 @@ from configs import configs
 logging.basicConfig(level=logging.DEBUG)
 
 if __name__ == '__main__':
-	os.system("v4l2-ctl -c exposure_absolute=10")
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-ip', '--ip-address', required=False, default='10.41.83.2',
 						help='IP Address for NetworkTable Server')
@@ -48,7 +47,7 @@ if __name__ == '__main__':
 	source_list = list()
 
 	for i in range(args['num_cam']):
-		cap = USBCapture(camera_num=i+args['offs_cam'], network_table=VisionTable, exposure=0.01, res=configs['camera_res'])
+		cap = CSICapture(camera_num=i+args['offs_cam'], network_table=VisionTable, exposure=3000, res=configs['camera_res'])
 		source_list.append(cap)
 		cap.start()
 
@@ -68,7 +67,16 @@ if __name__ == '__main__':
 
 
 	VisionTable.putString("BucketVisionState", "Started Process")
-	os.system("v4l2-ctl -c exposure_absolute=10")
+
+	if args['test']:
+		window_display = Cv2Display(source=display_output)
+		window_display.start()
+		VisionTable.putString("BucketVisionState", "Started CV2 Display")
+	else:
+		cs_display = CSDisplay(source=display_output)
+		cs_display.start()
+		VisionTable.putString("BucketVisionState", "Started CS Display")
+
 	try:
 		VisionTable.putValue("CameraNum", 0)
 		while True:
