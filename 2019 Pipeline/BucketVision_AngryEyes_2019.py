@@ -43,14 +43,13 @@ if __name__ == '__main__':
 
     VisionTable = NetworkTables.getTable("BucketVision")
     VisionTable.putString("BucketVisionState", "Starting")
-	VisionTable.putNumber("Exposure",50.0)
+    VisionTable.putNumber("Exposure",50.0)
     source_list = list()
 
     for i in range(args['num_cam']):
-        cap = USBCapture(camera_num=i+args['offs_cam'], network_table=VisionTable, exposure=0.01, res=configs['camera_res'])
+        cap = Cv2Capture(camera_num=i+args['offs_cam'], network_table=VisionTable, exposure=configs['exposure'], res=configs['camera_res'])
         source_list.append(cap)
         cap.start()
-		cap.exposure = 10
 
     source_mux = ClassMux(*source_list)
     output_mux = Mux1N(source_mux)
@@ -74,7 +73,7 @@ if __name__ == '__main__':
         window_display.start()
         VisionTable.putString("BucketVisionState", "Started CV2 Display")
     else:
-		cs_display = CSDisplay(source=display_output, network_table=VisionTable)
+        cs_display = CSDisplay(source=display_output, network_table=VisionTable)
         cs_display.start()
         VisionTable.putString("BucketVisionState", "Started CS Display")
 

@@ -15,80 +15,96 @@ except ImportError:
 
 ###############################################################
 # Video for Linux 2 METHODS
-# device=Video_device('\dev\video0')
 ###############################################################
-#set_format
+#width, height = 
+#set_format(width, height, yuv420 = 0, fourcc='MJPEG)
 #   Request the video device to set image size and format. 
 #   The device may choose another size than requested and will return its choice. 
 #   The image format will be RGB24 if yuv420 is zero (default) or YUV420 if yuv420 is 1, 
 #   if fourcc keyword is set that will be the fourcc pixel format used.
-# Exposure Time
-#set_exposure_auto
+#width, height, fourcc = 
+#get_format()
+#   Request current format
+#autoexp = 
+#set_exposure_auto(autoexp)
 #   Request the video device to set auto exposure to value. 
 #   The device may choose another value than requested and will return its choice.
-#get_exposure_auto
+#   0=auto, 1=manual, 2=shutter priority, 3=aperture priority
+#autoexp = 
+#get_exposure_auto()
 #   Request the video device to get auto exposure value.
-#set_exposure_absolute
+#exposure = 
+#set_exposure_absolute(exposure)
 #   Request the video device to set exposure time to value. 
 #   The device may choose another value than requested and will return its choice. 
-#get_exposure_absolute
+#   1=100micro seconds, max=frame interval
+#exposure = 
+#get_exposure_absolute()
 #   Request the video device to get exposure time value.
 ##############################################################
 # OPEN CLOSE AND BUFFERS
-#start
+#start()
 #   Start video capture.
-#stop
+#stop()
 #   top video capture.
-#create_buffers
+#create_buffers(count)
 #   Create buffers used for capturing image data. Can only be 
 #   called once for each video device object.
-#queue_all_buffers
+#queue_all_buffers()
 #   Let the video device fill all buffers created. 
-#read 
+#read()
 #   Reads image data from a buffer that has 
 #   been filled by the video device.  The image data is in RGB 
 #   or YUV420 format as decided by 'set_format'. The buffer 
 #   is removed from the queue. Fails if no buffer is filled. 
 #   Use select.select to check for filled buffers.
-#read_and_queue
+#read_and_queue()
 #   Same as 'read', but adds the buffer back to the queue so 
 #   the video device can fill it again."
-#close
+#close()
 #   Close video device. Subsequent calls to other methods will fail.
 ##############################################################
-#
 # SETTINGS
-#fileno
+#fileno = 
+#fileno()
 #   This enables video devices to be passed select.select for waiting
 #   until a frame is available for reading.
-#get_info
+#driver, card, bus_info, capabilities = 
+#get_info()
 #   Returns three strings with information about the video device,
 #   and one set containing strings identifying the capabilities of the video device.
-#get_fourcc
+#fourcc_int = 
+#get_fourcc(fourcc_string)
 #   Return the fourcc string encoded as int.
-#get_format
-#   Request the current video format.
-#set_fps
+#fps = 
+#set_fps(fps)
 #   Request the video device to set frame per seconds.
 #   The device may choose another frame rate than requested and will return its choice.
-#set_auto_white_balance
+#autowb = 
+#set_auto_white_balance(autowb)
 #   Request the video device to set auto white balance to value. 
 #   The device may choose another value than requested and will return its choice.
-#get_auto_white_balance
+#   autowb is 0, 1 bool
+#autowb = 
+#get_auto_white_balance()
 #   Request the video device to get auto white balance value.
-#set_white_balance_temperature
+#temp = 
+#set_white_balance_temperature(temp)
 #   Request the video device to set white balance tempature to value. 
+#   min=800 max=6500 step=1 default=57343
 #   The device may choose another value than requested and will return its choice.
-#get_white_balance_temperature
+#temp = 
+#get_white_balance_temperature()
 #   equest the video device to get white balance temperature value.
-#set_focus_auto
+#auto_focus = 
+#set_focus_auto(auto_focus)
 #   Request the video device to set auto focuse on or off. 
 #   The device may choose another value than requested and will return its choice.
-#get_focus_auto
+#   auto_focus 0 or 1 bool
+#auto_focus = 
+#get_focus_auto()
 #   Request the video device to get auto focus value.
 ##############################################################
-#set_auto_white_balance
-#set_white_balance_temperature
 
 class v4l2Capture(Thread):
     def __init__(self, camera_num=0, res=None, network_table=None, exposure=None, frate=None, fourcc=None):
@@ -99,11 +115,12 @@ class v4l2Capture(Thread):
         # Threading Locks
         self.capture_lock = Lock()
         self.frame_lock   = Lock()
+
         #
         # Video 4 Linux 2
         #
         device = "/dev/video" + str(camera_num)
-        exists = os.path.isfile(device)
+        exists = os.path.exists(device)
         if exists:
             self.camera = v4l2capture.Video_device(device)
             self.camera_open = True
@@ -112,6 +129,8 @@ class v4l2Capture(Thread):
             self.write_table_value("Camera{}Status".format(camera_num), 
                                     "Failed to open camera {}!".format(device), 
                                     level=logging.CRITICAL)
+
+        # Settings that are not yet applied
 
         # Exposure Time
         if exposure is not None:  
@@ -128,33 +147,30 @@ class v4l2Capture(Thread):
             self._fourcc = fourcc
         else: self._fourcc = configs['v4l2fourcc']
 
+        # Lets Apply All settings
+        
+        # Turn Off Auto Features
+        self.exposure_auto = 1 # manual
+        self.auto_white_balance = 0
+        self.white_balance_temperature = 57343
+        self.focus_auto = 0 # Off
         # Resolution
-        # We will need to have valid fourcc to set resolution
+        # This will also apply fourcc
         if res is not None:  
             self.resolution = res
         else: self.resolution = configs['camera_res']
-
-        # Turn Off Auto Features
-        self.exposure_auto = 0
-        self.auto_white_balance = 0
-        self.white_balance_temperature = 0
-        self.focus_auto = 0
 
         # Set Exposure
         self.exposure = self._exposure
         # Set Framerate
         self.framerate = self._framerate
 
+        # Prepare Buffers and Camera
+       
         # Buffer
         self.camera.create_buffers(10)
-
-        # Send the buffer to the device. Some devices require this to be done
-        # before calling 'start'.
+        # Send the buffer to the device. 
         self.camera.queue_all_buffers()
-
-        # Threading Locks
-        self.capture_lock = Lock()
-        self.frame_lock = Lock()
 
         self._frame = None
         self._new_frame = False
@@ -183,11 +199,11 @@ class v4l2Capture(Thread):
 
     @property
     def resolution(self):
-        if self.cap_open:
+        if self.camera_open:
             with self.capture_lock:
-                size_width, size_height, fourcc = self.camera.get_format()
+                width, height, fourcc = self.camera.get_format()
                 self._fourcc = fourcc
-                return (size_width, size_height)
+                return (width, height)
         else:
             return float("NaN")
 
@@ -195,11 +211,11 @@ class v4l2Capture(Thread):
     def resolution(self, val):
         if val is None:
             return
-        if self.cap_open:
+        if self.camera_open:
             with self.capture_lock:
-                size_width, size_height = self.camera.set_format(val[0], val[1], fourcc=self._fourcc)
-            self.write_table_value("Width",  int(size_width))
-            self.write_table_value("Height", int(size_height))
+                width, height = self.camera.set_format(val[0], val[1], yuv420 = 0, fourcc=self._fourcc)
+            self.write_table_value("Width",  int(width))
+            self.write_table_value("Height", int(height))
         else:
             self.write_table_value("Camera{}Status".format(self.camera_num),
                                     "Failed to set width to {}!".format(val),
@@ -214,7 +230,7 @@ class v4l2Capture(Thread):
         if val is None:
             return
         val = int(val)
-        if self.cap_open:
+        if self.camera_open:
             self._exposure=self.camera.set_exposure_absolute(val)
             self.write_table_value("Exposure", self._exposure)
         else:
@@ -230,11 +246,10 @@ class v4l2Capture(Thread):
     def fourcc(self, val):
         if val is None:
             return
-        val = int(val)
         self._fourcc = val
-        if self.cap_open:
-            self.camera.set_format(self.resolution[0], self.resolution[1], fourcc=self._fourcc)
-            self._fourcc=self.camera.get_fourcc()
+        if self.camera_open:
+            width, height, fourcc = get_format()
+            self.camera.set_format(width, height, yuv420 = 0, fourcc=self._fourcc)
             self.write_table_value("FourCC", self._fourcc)
         else:
             self.write_table_value("Camera{}Status".format(self.camera_num),
@@ -249,9 +264,8 @@ class v4l2Capture(Thread):
     def framerate(self, val):
         if val is None:
             return
-        val = int(val)
         self._framerate = val
-        if self.cap_open:
+        if self.camera_open:
             with self.capture_lock:
                 self._framerate = self.camera.set_fps(self._framerate)
             self.write_table_value("Framerate", self._framerate)
@@ -269,10 +283,10 @@ class v4l2Capture(Thread):
         if val is None:
             return
         val = int(val)
-        if self.cap_open:
+        if self.camera_open:
             with self.capture_lock:
-                self.camera.set_exposure_auto(val)
-            self.write_table_value("Exposure Auto", val)
+                exposure_auto = self.camera.set_exposure_auto(val)
+            self.write_table_value("Exposure Auto", exposure_auto)
         else:
             self.write_table_value("Camera{}Status".format(self.camera_num),
                                     "Failed to set exposure auto to {}!".format(val),
@@ -287,7 +301,7 @@ class v4l2Capture(Thread):
         if val is None:
             return
         val = int(val)
-        if self.cap_open:
+        if self.camera_open:
             with self.capture_lock:
                 self.camera.set_auto_white_balance(val)
             self.write_table_value("White Balance Auto", val)
@@ -305,10 +319,10 @@ class v4l2Capture(Thread):
         if val is None:
             return
         val = int(val)
-        if self.cap_open:
+        if self.camera_open:
             with self.capture_lock:
-                self.camera.set_white_balance_temperature(val)
-            self.write_table_value("White Balance Temperature", val)
+                temp = self.camera.set_white_balance_temperature(val)
+            self.write_table_value("White Balance Temperature", temp)
         else:
             self.write_table_value("Camera{}Status".format(self.camera_num),
                                     "Failed to set white balance temperature to {}!".format(val),
@@ -322,11 +336,11 @@ class v4l2Capture(Thread):
     def focus_auto(self, val):
         if val is None:
             return
-        val = int(val)
-        if self.cap_open:
+        val = bool(val)
+        if self.camera_open:
             with self.capture_lock:
-                self.camera.set_focus_auto(val)
-            self.write_table_value("Auto Focus", val)
+                auto_focus= self.camera.set_focus_auto(val)
+            self.write_table_value("Auto Focus", auto_focus)
         else:
             self.write_table_value("Camera{}Status".format(self.camera_num),
                                     "Failed to set auto focus to {}!".format(val),

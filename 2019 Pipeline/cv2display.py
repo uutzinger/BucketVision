@@ -1,6 +1,7 @@
 from threading import Thread
 import logging
 import cv2
+import time
 
 class Cv2Display(Thread):
     def __init__(self, source=None, window_name="Camera0"):
@@ -31,13 +32,23 @@ class Cv2Display(Thread):
         Thread.start(self)
 
     def run(self):
+        start_time = time.time()
+        num_frames = 0
         while not self.stopped:
             if self.source is not None:
                 if self.source.new_frame:
-                    self.frame = self.source.frame
+                   self.frame = self.source.frame
+                    
             if self._new_frame:
                 cv2.imshow(self.window_name, self._frame)
                 self._new_frame = False
+                num_frames += 1
+                
+            if (time.time() - start_time) >= 5.0:
+                print("Display: {}fps".format(num_frames/5.0))
+                num_frames = 0
+                start_time = time.time()
+
             cv2.waitKey(1)
         cv2.destroyAllWindows()
 

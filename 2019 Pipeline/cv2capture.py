@@ -4,35 +4,67 @@ import logging
 import time
 import os
 import cv2
-from configs import configs
+from   configs import configs
 try:
     import networktables
 except ImportError:
     pass
 
 class Cv2Capture(Thread):
-    def __init__(self, camera_num=0, res=(640, 480), network_table=None, exposure=None):
+    def __init__(self, camera_num=0, res=None, network_table=None, exposure=None):
         self.logger = logging.getLogger("USBCapture{}".format(camera_num))
         self.camera_num = camera_num
         self.net_table = network_table
 
         # first vars
-        self._exposure = exposure
+        if exposure is not None:
+            self._exposure = exposure
+        else:
+            exposure = configs['exposure']
+                
+        if os.name == 'nt':
+            self.cap = cv2.VideoCapture(self.camera_num, apiPreference = cv2.CAP_VFW )
+        else:
+            self.cap = cv2.VideoCapture(self.camera_num, apiPreference = cv2.CAP_V4L2 )
 
-        self.cap = cv2.VideoCapture()
-        self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))
-        self.cap.open(self.camera_num)
         self.cap_open = self.cap.isOpened()
         if self.cap_open is False:
             self.cap_open = False
             self.write_table_value("Camera{}Status".format(camera_num),
                                     "Failed to open camera {}!".format(camera_num),
                                     level=logging.CRITICAL)
+ 
+        fourcc = configs['fourcc']
+        ret = self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(fourcc[0],fourcc[1],fourcc[2],fourcc[3]))
+        if ret:
+            self.write_table_value("FOURCC", fourcc)
+        else:
+            self.write_table_value("Camera{}Status".format(camera_num),
+                    "Failed to set FOURCC to {}!".format(fourcc),
+                    level=logging.CRITICAL)
 
+        fps    = int(configs['fps'])
+        ret = self.cap.set(cv2.CAP_PROP_FPS, fps)
+        if ret:
+            self.write_table_value("FPS", fps)
+        else:
+            self.write_table_value("Camera{}Status".format(camera_num),
+                    "Failed to set FPS to {}!".format(fps),
+                    level=logging.CRITICAL)
+
+        buffersize = int(configs['buffersize'])
+        ret = self.cap.set(cv2.CAP_PROP_BUFFERSIZE, buffersize)
+        if ret:
+            self.write_table_value("BufferSize", buffersize)
+        else: 
+            self.write_table_value("Camera{}Status".format(camera_num),
+                    "Failed to set Buffer Size to {}!".format(buffersize),
+                    level=logging.CRITICAL)
+         
         if res is not None:
             self.camera_res = res
         else:
-            self.camera_res = (self.cap.get(cv2.CAP_PROP_FRAME_WIDTH), self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            self.camera_res = (configs['res'])
 
         # Threading Locks
         self.capture_lock = Lock()
@@ -61,7 +93,6 @@ class Cv2Capture(Thread):
     def frame(self):
         with self.frame_lock:
             self._new_frame = False
-        # For maximum thread (or process) safety, you should copy the frame, but this is very expensive
         return self._frame
 
     @property
@@ -84,7 +115,6 @@ class Cv2Capture(Thread):
             self.write_table_value("Camera{}Status".format(self.camera_num),
                                     "Failed to set width to {}!".format(val),
                                     level=logging.CRITICAL)
-
     @property
     def height(self):
         if self.cap_open:
@@ -118,12 +148,8 @@ class Cv2Capture(Thread):
         self._exposure = val
         if self.cap_open:
             with self.capture_lock:
-                if os.name == 'nt':
-                    #self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1) # must disable auto exposure explicitly on some platforms
-                    self.cap.set(cv2.CAP_PROP_EXPOSURE, val)
-                else:
-                    os.system("v4l2-ctl -c exposure_absolute={}".format(val))
-                    print("Exposure set to: {}".format(val))
+                self.cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1) # must disable auto exposure explicitly on some platforms
+                self.cap.set(cv2.CAP_PROP_EXPOSURE, val)
             self.write_table_value("Exposure", val)
         else:
             self.write_table_value("Camera{}Status".format(self.camera_num),
@@ -163,20 +189,19 @@ class Cv2Capture(Thread):
                 print("Capture{}: {}fps".format(self.camera_num, num_frames/5.0))
                 num_frames = 0
                 start_time = time.time()
-            # TODO: Make this less crust, I would like to setup a callback
             try:
                 if self._exposure != self.net_table.getEntry("Exposure").value:
                     self.exposure = self.net_table.getEntry("Exposure").value
             except: pass
             with self.capture_lock:
                 _, img = self.cap.read()
-            with self.frame_lock:
-                self._frame = img[int(self.camera_res[1]*(configs['crop_top'])):int(self.camera_res[1]*(configs['crop_bot'])), :, :]
-                if first_frame:
-                    first_frame = False
-                    print(img.shape, self._frame.shape)
-                self._new_frame = True
-                num_frames = num_frames + 1
+                with self.frame_lock:
+                    self._frame = img[int(self.camera_res[1]*(configs['crop_top'])):int(self.camera_res[1]*(configs['crop_bot'])), :, :]
+                    if first_frame:
+                        first_frame = False
+                        print(img.shape, self._frame.shape)
+                    self._new_frame = True
+                    num_frames = num_frames + 1
 
 if __name__ == '__main__':
     import os
@@ -190,10 +215,8 @@ if __name__ == '__main__':
     FrontCameraTable = VisionTable.getSubTable('FrontCamera')
 
     print("Starting Capture")
-    camera = Cv2Capture(network_table=FrontCameraTable)
+    camera = Cv2Capture(camera_num=0, res=(320,240), network_table=FrontCameraTable)
     camera.start()
-
-    os.system("v4l2-ctl -c exposure_absolute={}".format(configs['exposure']))
 
     print("Getting Frames")
     while True:
