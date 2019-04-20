@@ -16,65 +16,39 @@ class Cv2Capture(Thread):
         self.camera_num = camera_num
         self.net_table = network_table
 
-        # first vars
+        # Threading Locks
+        self.capture_lock = Lock()
+        self.frame_lock = Lock()
+
         if exposure is not None:
             self._exposure = exposure
         else:
-            exposure = configs['exposure']
+            self._exposure = configs['exposure']
                 
-        if os.name == 'nt':
-            self.cap = cv2.VideoCapture(self.camera_num, apiPreference = cv2.CAP_VFW )
-        else:
-            self.cap = cv2.VideoCapture(self.camera_num, apiPreference = cv2.CAP_V4L2 )
-
-        self.cap_open = self.cap.isOpened()
-        if self.cap_open is False:
-            self.cap_open = False
-            self.write_table_value("Camera{}Status".format(camera_num),
-                                    "Failed to open camera {}!".format(camera_num),
-                                    level=logging.CRITICAL)
- 
-        fourcc = configs['fourcc']
-        ret = self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(fourcc[0],fourcc[1],fourcc[2],fourcc[3]))
-        if ret:
-            self.write_table_value("FOURCC", fourcc)
-        else:
-            self.write_table_value("Camera{}Status".format(camera_num),
-                    "Failed to set FOURCC to {}!".format(fourcc),
-                    level=logging.CRITICAL)
-
-        fps    = int(configs['fps'])
-        ret = self.cap.set(cv2.CAP_PROP_FPS, fps)
-        if ret:
-            self.write_table_value("FPS", fps)
-        else:
-            self.write_table_value("Camera{}Status".format(camera_num),
-                    "Failed to set FPS to {}!".format(fps),
-                    level=logging.CRITICAL)
-
-        buffersize = int(configs['buffersize'])
-        ret = self.cap.set(cv2.CAP_PROP_BUFFERSIZE, buffersize)
-        if ret:
-            self.write_table_value("BufferSize", buffersize)
-        else: 
-            self.write_table_value("Camera{}Status".format(camera_num),
-                    "Failed to set Buffer Size to {}!".format(buffersize),
-                    level=logging.CRITICAL)
-         
         if res is not None:
             self.camera_res = res
         else:
             self.camera_res = (configs['res'])
 
-        # Threading Locks
-        self.capture_lock = Lock()
-        self.frame_lock = Lock()
+        if os.name == 'nt':
+            self.cap = cv2.VideoCapture(self.camera_num, apiPreference = cv2.CAP_DSHOW )
+        else:
+            self.cap = cv2.VideoCapture(self.camera_num, apiPreference = cv2.CAP_V4L2 )
+
+        self.cap_open = self.cap.isOpened()
+        if self.cap_open is False:
+            self.write_table_value("Camera{}Status".format(self.camera_num),
+                                    "Failed to open camera {}!".format(self.camera_num),
+                                    level=logging.CRITICAL)
+
+        self.fourcc = configs['fourcc']
+        self.fps = configs['fps'] 
+        self.buffersize = int(configs['buffersize'])
 
         self._frame = None
         self._new_frame = False
 
         self.stopped = True
-        self.exposure = exposure
         Thread.__init__(self)
 
     @property
@@ -156,6 +130,61 @@ class Cv2Capture(Thread):
                                     "Failed to set exposure to {}!".format(val),
                                     level=logging.CRITICAL)
 
+    @property
+    def fps(self):
+        return self._fps
+
+    @fps.setter
+    def fps(self, val):
+        if val is None:
+            return
+        self._fps = val
+        if self.cap_open:
+            with self.capture_lock:
+                if self.cap.set(cv2.CAP_PROP_FPS, self._fps):
+                    self._fps = self.cap.get(cv2.CAP_PROP_FPS)
+                    self.write_table_value("FPS", self._fps)
+                else:
+                    self.write_table_value("Camera{}Status".format(self.camera_num),
+                            "Failed to set FPS to {}!".format(val),
+                            level=logging.CRITICAL)
+
+    @property
+    def fourcc(self):
+        return self._fourcc
+
+    @fourcc.setter
+    def fourcc(self, val):
+        if val is None:
+            return
+        self._fourcc = val
+        if self.cap_open:
+            with self.capture_lock:
+                if self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(self._fourcc[0],self._fourcc[1],self._fourcc[2],self._fourcc[3])):
+                    self.write_table_value("FOURCC", self._fourcc)
+                else:
+                    self.write_table_value("Camera{}Status".format(self.camera_num),
+                            "Failed to set FOURCC to {}!".format(val),
+                            level=logging.CRITICAL)
+
+    @property
+    def buffersize(self):
+        return self._buffersize
+
+    @buffersize.setter
+    def buffersize(self, val):
+        if val is None:
+            return
+        self._buffersize = val
+        if self.cap_open:
+            with self.capture_lock:
+                if self.cap.set(cv2.CAP_PROP_BUFFERSIZE, self._buffersize):
+                    self.write_table_value("Buffersize", self._buffersize)
+                else:
+                    self.write_table_value("Camera{}Status".format(self.camera_num),
+                            "Failed to set Buffer Size to {}!".format(val),
+                            level=logging.CRITICAL)
+
     def write_table_value(self, name, value, level=logging.DEBUG):
         self.logger.log(level, "{}:{}".format(name, value))
         if self.net_table is None:
@@ -186,7 +215,8 @@ class Cv2Capture(Thread):
         img = None
         while not self.stopped:
             if (time.time() - start_time) >= 5.0:
-                print("Capture{}: {}fps".format(self.camera_num, num_frames/5.0))
+                self.write_table_value("CaptureFPS" + str(self.camera_num), num_frames/5.0)
+                # print("Capture{}: {}fps".format(self.camera_num, num_frames/5.0))
                 num_frames = 0
                 start_time = time.time()
             try:

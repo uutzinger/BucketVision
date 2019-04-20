@@ -6,6 +6,7 @@ configs = {
     'fps'          : 100,      # 6, 9, 21, 30, 30, 60, 100
     'fourcc'       : 'MJPG',   # MJPG, YUY2, for ELP https://www.fourcc.org/
     'buffersize'   : 4,        # default is 4 for V4L2, max 10
+    'serverfps'    : 10,
     'CSIexposure'  : 3000,
     'CSIframerate' : 90,
 }
@@ -19,4 +20,3 @@ configs['output_res'] = (configs['camera_res'][0], cropped_vres)
 # MJPG BUFFER 1 FPS 30, 98,83mslag
 # YUY2 BUFFER 1 FPS 30 121,231,77mslag
 # YUY2 BUFFER 100 FPS 30 ms 103,26,69,111mslag
-
