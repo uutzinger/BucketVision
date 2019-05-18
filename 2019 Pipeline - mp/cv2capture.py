@@ -72,14 +72,21 @@ class Cv2Capture(Thread):
                                     "Failed to open camera {}!".format(self.camera_num),
                                     level=logging.CRITICAL)
 
-        self.fourcc       =   str(configs['fourcc'])
-        self.fps          = float(configs['fps']) 
-        self.buffersize   =   int(configs['buffersize'])
-        self.autoexposure =   int(configs['buffersize'])
-        self.autowhite    =   int(configs['autowhite'])
-        self.whitetemp    =   int(configs['whitetemp'])
-        self.autofocus    =   int(configs['autofocus'])
-
+        try: self.fourcc       =   str(configs['fourcc'])
+        except: pass
+        try: self.fps          = float(configs['fps']) 
+        except: pass
+        try: self.buffersize   =   int(configs['buffersize'])
+        except: pass
+        try: self.autoexposure =   int(configs['autoexposure'])
+        except: pass
+        try: self.autowhite    =   int(configs['autowhite'])
+        except: pass
+        try: self.whitetemp    =   int(configs['whitetemp'])
+        except: pass
+        try: self.autofocus    =   int(configs['autofocus'])
+        except: pass
+            
         self._frame = None
         self._new_frame = False
 
@@ -115,6 +122,7 @@ class Cv2Capture(Thread):
     def frame(self, val):
         with self.frame_lock:
             self._frame = val
+            self._new_frame = True
 
     # capture frame width
     @property
@@ -324,12 +332,9 @@ class Cv2Capture(Thread):
         num_frames = 0
         img = None
         while not self.stopped:
-            with self.capture_lock:
-                _, img = self.cap.read()
-                with self.frame_lock:
-                    self.frame = img[self.crop_top:self.crop_bot, :, :]
-                    self.new_frame = True
-                    num_frames = num_frames + 1
+            with self.capture_lock: _, img = self.cap.read()
+            self.frame = img[self.crop_top:self.crop_bot, :, :]
+            num_frames += 1
             if (time.time() - start_time) >= 5.0:
                 self.write_table_value("CaptureFPS" + str(self.camera_num), num_frames/5.0)
                 num_frames = 0
@@ -361,8 +366,6 @@ if __name__ == '__main__':
 
     print("Getting Frames")
     while True:
-        if camera.new_frame:
-            cv2.imshow('my webcam', camera.frame)
-        if cv2.waitKey(1) == 27:
-            break  # esc to quit
+        if camera.new_frame:      cv2.imshow('my webcam', camera.frame) #
+        if cv2.waitKey(1) == 27:  break                                 # esc to quit
     camera.stop()
