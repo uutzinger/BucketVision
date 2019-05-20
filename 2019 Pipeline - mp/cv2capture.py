@@ -74,7 +74,7 @@ class Cv2Capture(Thread):
 
         try: self.fourcc       =   str(configs['fourcc'])
         except: pass
-        try: self.fps          = float(configs['fps']) 
+        try: self.fps          =   float(configs['fps']) 
         except: pass
         try: self.buffersize   =   int(configs['buffersize'])
         except: pass

@@ -2,9 +2,9 @@ configs = {
 	'camera_res'    : (320, 240),     # camera width & height                                      CAP_PROP_FRAME_WIDTH, CAP_PROP_FRAME_HEIGHT
     'crop_top'      : 2/6,            # crop top
     'crop_bot'      : 5/6,            # crop bottom
-    'fov'           : 80,             # camera lens field of view
+    'fov'           : 80,             # camera lens field of view in degress
     'exposure'      : 3,              # 1=100micro seconds, max=frame interval,                    CAP_PROP_EXPOSURE
-    'fps'           : 100,            # 6, 9, 21, 30, 30, 60, 100                                  CAP_PROP_FPS
+    'fps'           : 100,            # 6, 9, 21, 30, 30, 60, 100, 120                             CAP_PROP_FPS
     'fourcc'        : 'MJPG',         # MJPG, YUY2, for ELP camera https://www.fourcc.org/         CAP_PROP_FOURCC 
     'buffersize'    : 4,              # default is 4 for V4L2, max 10,                             CAP_PROP_BUFFERSIZE 
     'autoexposure'  : 1,              # 0=auto, 1=manual, 2=shutter priority, 3=aperture priority, CAP_PROP_AUTO_EXPOSURE
