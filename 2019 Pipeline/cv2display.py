@@ -1,6 +1,6 @@
 ###############################################################################
 #                                                                             #
-# file:    .py                                                                #
+# file:    cv2display.py                                                      #
 #                                                                             #
 # authors: BitBuckets FRC 4183                                                #
 #                                                                             #
@@ -14,15 +14,15 @@
 # Imports
 ###############################################################################
 # Execution
-from threading import Thread
+from   threading import Thread
 import logging
 import time
 # Computer Vision
 import cv2
 # FIRST
-from networktables import NetworkTables
+from   networktables import NetworkTables
 # 4183
-from configs import configs
+from   configs import configs
 
 ###############################################################################
 # Video Display
@@ -32,20 +32,24 @@ class Cv2Display(Thread):
         self.logger = logging.getLogger("Cv2Display")
         self.window_name = window_name
         self.source = source
-        self.fps = configs['serverfps']          # max fps for video server
-        self._frame = None                       # clear frame storage
-        self._new_frame = False                  # no new images yet
         self.net_table = network_table
-        self.stopped = True                      # prepapre for continues running
+
+        self.fps = configs['serverfps']       # max display fps
+
+        self._frame = None                     # clear frame storage
+        self._new_frame = False                # no new frame yet
+
+        self.stopped = True                    # prepare for continous running
         Thread.__init__(self)
 
 ###############################################################################
 # Setting
-# fps, frame
+# frame, fps
 ###############################################################################
 
     @property
     def frame(self):
+        self._new_frame = False
         return self._frame
 
     @frame.setter
@@ -73,7 +77,7 @@ class Cv2Display(Thread):
             self.net_table.putValue(name, value)
 
 ###############################################################################
-# Thread Establishing and Running
+# Thread establishing and running
 ###############################################################################
 
     def stop(self):
@@ -88,25 +92,24 @@ class Cv2Display(Thread):
         last_fps_time = start_time      # keep time for fps measurement
         num_frames = 0                  # number of frames displayed
         while not self.stopped:
+            current_time = time.time()
+
             if self.source is not None:
                 if self.source.new_frame:
-                   self.frame = self.source.frame # get pictre from grabbed frame
-                    
+                   self.frame = self.source.frame # get picture from grabbed frame
+
             if self._new_frame:
-                current_time = time.time()
-                if (current_time - start_time) >= (1.0/(self.fps+0.5)):         # limit display fps
-                    cv2.imshow(self.window_name, self._frame)
+                if (current_time - start_time) >= (1.0/(self._fps+0.5)): # limit display fps
+                    cv2.imshow(self.window_name, self.frame)
                     start_time =  current_time
                     num_frames += 1
-                    self._new_frame = False
-                
-            current_time = time.time()
-            if (current_time - last_fps_time) >= 5.0:                          # compute fps every 5 secs
+
+            if (current_time - last_fps_time) >= 5.0:                    # compute fps every 5 secs
                 self.write_table_value("DisplayFPS", (num_frames/5.0))
                 num_frames = 0
                 last_fps_time = current_time
 
-            cv2.waitKey(1)
+            cv2.waitKey(1) # wait at least 1ms
         cv2.destroyAllWindows()
 
 ###############################################################################
