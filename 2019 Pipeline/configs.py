@@ -22,7 +22,7 @@ configs = {
     'Colorfactors'  : (-0.2957, 0.7606, -0.5780),      # Color factors from the Principal Component Analysis
     'GrayThresh'    : 24,             # Threshold for grayscale image
     'ip'            : '10.41.83.2',   # address of network table server
-    'MarkingColors' : colors = [      # For labeling targets 
+    'MarkingColors' : [               # For labeling targets 
                       ( 75,  25, 230),
                       ( 25, 225, 255),
                       (200, 130,   0),
