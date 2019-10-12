@@ -28,6 +28,18 @@ class AngryProcesses(Thread):
         self.stopped = True
         Thread.__init__(self)
 
+    #
+    # Network Table routines ##########################################
+    #
+    def write_table_value(self, name, value, level=logging.DEBUG):
+        self.logger.log(level, "{}:{}".format(name, value))
+        if self.net_table is None:
+            self.net_table = dict()
+        if type(self.net_table) is dict:
+            self.net_table[name] = value
+        else:
+            self.net_table.putValue(name, value)
+
     @property
     def frame(self):
         self.new_frame = False
@@ -47,8 +59,8 @@ class AngryProcesses(Thread):
         if self.net_table is not None:
             #last_net_time = float(self.net_table.getEntry("LastFrameTime").value)
             #if last_net_time >= self.last_frame_time:
-                #print("\nAP: {}: net table ahead!".format(self.debug_label))
-            #    return
+            #   print("\nAP: {}: net table ahead!".format(self.debug_label))
+            #   return
             self.net_table.putNumber("LastFrameTime", self.last_frame_time)
             self.net_table.putNumber("CurrFrameTime", time.time())
             result_data = self.dict_zip(*[r.dict() for r in self.results])
@@ -82,7 +94,8 @@ class AngryProcesses(Thread):
                     self._new_frame = True
             if self._new_frame:
                 if time.time() - start_time >= 5.0:
-                    print("Targets processed:{}/s".format(num_frames/5.0))
+                    self.write_table_value("TargetFramesProcessedPS", num_frames/5.0 )
+                    # print("Targets processed:{}/s".format(num_frames/5.0))
                     num_frames = 0
                     start_time = time.time()
                 self.last_frame_time = time.time()
@@ -96,7 +109,8 @@ class AngryProcesses(Thread):
                 self.results = self.processor.FindTarget(frame[crop_top:crop_bot, :, :])
                 Target_Timing_hist.append((time.time() - tmp_s))
                 if len(Target_Timing_hist) >= 50:
-                   print("Target detected in:{:.3f} ms".format(sum(Target_Timing_hist)/50.0))
+                   self.write_table_value("TargetsProcessedPS", sum(Target_Timing_hist)/50.0 )
+                   # print("Target detected in:{:.3f} s".format(sum(Target_Timing_hist)/50.0))
                    Target_Timing_hist = list()
                 if self.net_table is not None:
                     pass

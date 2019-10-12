@@ -129,7 +129,8 @@ class CSICapture(Thread):
         for f in self.stream: 
             # FPS calculation
             if (time.time() -  start_time) >= 5.0:
-                print("CSI{} frames captured: {:.1f}/s".format(self.camera_num, num_frames/5.0))
+                self.write_table_value("CaptureFPS", num_frames/5.0 )
+                # print("CSI{} frames captured: {:.1f}/s".format(self.camera_num, num_frames/5.0))
                 num_frames = 0
                 start_time = time.time()
             # Adjust exposure if requested via network tables

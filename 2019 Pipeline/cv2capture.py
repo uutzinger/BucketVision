@@ -216,7 +216,7 @@ class Cv2Capture(Thread):
         while not self.stopped:
             current_time = time.time()
             if (current_time - start_time) >= 5.0:
-                self.write_table_value("CaptureFPS" + str(self.camera_num), num_frames/5.0)
+                self.write_table_value("CaptureFPS", num_frames/5.0)
                 # print("Capture{}: {}fps".format(self.camera_num, num_frames/5.0))
                 num_frames = 0
                 start_time = current_time
