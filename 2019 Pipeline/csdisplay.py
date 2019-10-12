@@ -1,16 +1,35 @@
-from threading import Thread
-from configs   import configs
-from cscore    import CameraServer
+###############################################################################
+#                                                                             #
+# file:    csdisplay.py                                                      #
+#                                                                             #
+# authors: BitBuckets FRC 4183                                                #
+#                                                                             #
+# date:    April 1st 2019                                                     #
+#                                                                             #
+# brief:                                                                      #
+#                                                                             #
+###############################################################################
+
+###############################################################################
+# Imports
+###############################################################################
+from threading     import Thread
+from configs       import configs
+from cscore        import CameraServer
+from networktables import NetworkTables
 import logging
 import time
 import cv2
 
+###############################################################################
+# Network Video Display
+###############################################################################
 class CSDisplay(Thread):
-
     def __init__(self, source=None, stream_name="Camera0", res=None, network_table=None):
         self.logger = logging.getLogger("CSDisplay")
         self.stream_name = stream_name
         self.source = source
+        self.net_table = network_table
 
         if res is not None:
             self.output_width = res[0]
@@ -33,6 +52,11 @@ class CSDisplay(Thread):
         self.stopped = True
         Thread.__init__(self)
 
+###############################################################################
+# Setting
+# frame, fps
+###############################################################################
+
     @property
     def frame(self):
         return self._frame
@@ -42,12 +66,15 @@ class CSDisplay(Thread):
         self._frame = img
         self._new_frame = True
 
-    def stop(self):
-        self.stopped = True
+    @property
+    def fps(self):
+        return self._fps
 
-    def start(self):
-        self.stopped = False
-        Thread.start(self)
+    @fps.setter
+    def fps(self, fps):
+        self._fps = fps
+
+###############################################################################
 
     @staticmethod
     def NetTableVisionGet(net_table):
@@ -89,6 +116,17 @@ class CSDisplay(Thread):
             self.net_table[name] = value
         else:
             self.net_table.putValue(name, value)
+            
+###############################################################################
+# Thread establishing and running
+###############################################################################
+
+    def stop(self):
+        self.stopped = True
+
+    def start(self):
+        self.stopped = False
+        Thread.start(self)
 
     def run(self):
         start_time = time.time()    # keep time to limit display fps
@@ -115,6 +153,10 @@ class CSDisplay(Thread):
                 self.write_table_value("DisplayFPS", (num_frames/5.0))
                 num_frames = 0
                 last_fps_time = current_time
+
+###############################################################################
+# Testing
+###############################################################################
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)

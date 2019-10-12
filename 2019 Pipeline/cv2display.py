@@ -34,7 +34,8 @@ class Cv2Display(Thread):
         self.source = source
         self.net_table = network_table
 
-        self.fps = configs['serverfps']       # max display fps
+        self.fps     = configs['serverfps']       # max display fps
+        self._colors = configs['MarkingColors']
 
         self._frame = None                     # clear frame storage
         self._new_frame = False                # no new frame yet
@@ -66,6 +67,38 @@ class Cv2Display(Thread):
         self._fps = fps
 
 ###############################################################################
+
+    @staticmethod
+    def NetTableVisionGet(net_table):
+        array_keys = ('angle', 'parallax', 'distance', 'pos_x', 'pos_y', 'size')
+        ret_data = dict()
+        ret_data['LastFrameTime'] = net_table.getNumber("LastFrameTime", None)
+        ret_data['CurrFrameTime'] = net_table.getNumber("CurrFrameTime", None)
+        ret_data['NumTargets'] = int(net_table.getNumber("NumTargets", 0))
+        for key in array_keys:
+            ret_data[key] = net_table.getNumberArray(key, None)
+        return ret_data
+
+    def drawtargets(self, image):
+        if self.net_table is None:
+            return image
+        if self.net_table.getBoolean('Overlay', False):
+            return image
+
+        height, width, _ = image.shape
+        targets = self.NetTableVisionGet(self.net_table)
+        print("CSD: looping {}".format(targets['NumTargets']))
+        for index in range(targets['NumTargets']):
+            try:
+                color = self._colors[index]
+                x, y = targets['pos_x'][index], targets['pos_y'][index]
+                image = cv2.circle(image, (int(x * width), int(y * height)),
+                                    int((targets['size'][index] * width) / 4),
+                                    color, -1)
+            except IndexError:
+                # More targets than colors!
+                return image
+        return image
 
     def write_table_value(self, name, value, level=logging.DEBUG):
         self.logger.log(level, "{}:{}".format(name, value))
