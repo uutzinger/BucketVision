@@ -2,7 +2,8 @@ import math
 import os
 import numpy as np
 import cv2
-from configs import configs
+
+from   configs import configs
 
 def display_scaled_image(name, image, scale):
     """Function to display a scaled cv2 image
@@ -167,37 +168,18 @@ class VisionTarget(object):
 
 
 class ProcessImage(object):
-    HSV_Top = (49, 0, 48)
-    HSV_Bot = (91, 255, 255)
-    Min_Rect_Area = 0.0001
-    Max_Trgt_Ratio = 3
-    Rect_Ratio_Limit = 6
-    Min_Ang = 50
-    Max_Ang = 75
-
-    colors = [
-        (75, 25, 230),
-        (25, 225, 255),
-        (200, 130, 0),
-        (48, 130, 245),
-        (240, 240, 70),
-        (230, 50, 240),
-        (190, 190, 250),
-        (128, 128, 0),
-        (255, 190, 230),
-        (40, 110, 170),
-        (200, 250, 255),
-        (0, 0, 128),
-        (195, 255, 170),
-        (128, 0, 0),
-        (128, 128, 128),
-        (255, 255, 255),
-        (75, 180, 60)
-    ]
 
     def __init__(self):
         (self.cv2major, self.cv2minor, _) = cv2.__version__.split(".")
-
+        self.colors           = configs['MarkingColors']
+        self.HSV_Top          = configs['HSV_Top']
+        self.HSV_Bot          = configs['HSV_Bot']
+        self.Min_Rect_Area    = configs['Min_Area']
+        self.Max_Trgt_Ratio   = configs['MaxTargetRatio']
+        self.Rect_Ratio_Limit = configs['RectRatioLimit']
+        self.Min_Ang          = configs['MinAngle']
+        self.Max_Ang          = configs['MaxAngle']
+        
     def FindTarget(self, image):
         height, width, _ = image.shape
         image_area = height * width
@@ -216,12 +198,13 @@ class ProcessImage(object):
         # 252, 76, 141, 48, 114
         #e3 = cv2.getTickCount()
         if self.cv2major == '4':
-            contours, _ = cv2.findContours(threshold, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
+            contours, _    = cv2.findContours(threshold, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
         else:
             _, contours, _ = cv2.findContours(threshold, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
         # print("proc:{}contoures".format(len(contours)))
+        
         # Filter Contours that are smaller than threshold 
-        # 46,41, 0.1, 17
+        # 46, 41, 0.1, 17
         #e4 = cv2.getTickCount()
         c_contours = list() # candidate objects
         for contour in contours:

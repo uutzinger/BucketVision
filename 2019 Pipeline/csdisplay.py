@@ -1,31 +1,11 @@
 from threading import Thread
+from configs   import configs
+from cscore    import CameraServer
 import logging
 import time
 import cv2
-from configs import configs
-from cscore import CameraServer
 
 class CSDisplay(Thread):
-
-    colors = [
-        (75, 25, 230),
-        (25, 225, 255),
-        (200, 130, 0),
-        (48, 130, 245),
-        (240, 240, 70),
-        (230, 50, 240),
-        (190, 190, 250),
-        (128, 128, 0),
-        (255, 190, 230),
-        (40, 110, 170),
-        (200, 250, 255),
-        (0, 0, 128),
-        (195, 255, 170),
-        (128, 0, 0),
-        (128, 128, 128),
-        (255, 255, 255),
-        (75, 180, 60)
-    ]
 
     def __init__(self, source=None, stream_name="Camera0", res=None, network_table=None):
         self.logger = logging.getLogger("CSDisplay")
@@ -39,7 +19,8 @@ class CSDisplay(Thread):
             self.output_width = int(self.source.width)
             self.output_height = int(self.source.height)
 
-        self._fps = configs['serverfps']
+        self._fps    = configs['serverfps']
+        self._colors = configs['MarkingColors']
 
         cs = CameraServer.getInstance()
         self.outstream = cs.putVideo(self.stream_name, self.output_width, self.output_height)
@@ -90,7 +71,7 @@ class CSDisplay(Thread):
         print("CSD: looping {}".format(targets['NumTargets']))
         for index in range(targets['NumTargets']):
             try:
-                color = self.colors[index]
+                color = self._colors[index]
                 x, y = targets['pos_x'][index], targets['pos_y'][index]
                 image = cv2.circle(image, (int(x * width), int(y * height)),
                                     int((targets['size'][index] * width) / 4),

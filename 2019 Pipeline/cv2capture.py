@@ -1,10 +1,11 @@
 from   threading import Thread
 from   threading import Lock
+from   configs   import configs
 import logging
 import time
 import os
 import cv2
-from   configs import configs
+
 try:
     import networktables
 except ImportError:
@@ -12,7 +13,7 @@ except ImportError:
 
 class Cv2Capture(Thread):
     def __init__(self, camera_num=0, res=None, network_table=None, exposure=None):
-        self.logger = logging.getLogger("USBCapture{}".format(camera_num))
+        self.logger = logging.getLogger("CV2Capture{}".format(camera_num))
         self.camera_num = camera_num
         self.net_table = network_table
 
@@ -41,8 +42,8 @@ class Cv2Capture(Thread):
                                     "Failed to open camera {}!".format(self.camera_num),
                                     level=logging.CRITICAL)
 
-        self.fourcc = configs['fourcc']
-        self.fps = configs['fps'] 
+        self.fourcc     =     configs['fourcc']
+        self.fps        =     configs['fps'] 
         self.buffersize = int(configs['buffersize'])
 
         self._frame = None
@@ -224,7 +225,7 @@ class Cv2Capture(Thread):
                 if self._exposure != self.net_table.getEntry("Exposure").value:
                     self.exposure = self.net_table.getEntry("Exposure").value
             except: pass
-
+            
             with self.capture_lock:
                 _, img = self.cap.read()
                 with self.frame_lock:

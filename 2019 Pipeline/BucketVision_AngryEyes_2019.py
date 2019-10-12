@@ -2,20 +2,18 @@ import logging
 import argparse
 import os
 import time
-
 import cv2
 
-from networktables import NetworkTables
-
-from cv2capture import Cv2Capture
-from cv2display import Cv2Display
+from networktables  import NetworkTables
+from cv2capture     import Cv2Capture
+from csicapture     import CSICapture
+from cv2display     import Cv2Display
 from angryprocesses import AngryProcesses
-from class_mux import ClassMux
-from mux1n import Mux1N
-from resizesource import ResizeSource
-from overlaysource import OverlaySource
-
-from configs import configs
+from class_mux      import ClassMux
+from mux1n          import Mux1N
+from resizesource   import ResizeSource
+from overlaysource  import OverlaySource
+from configs        import configs
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -28,26 +26,32 @@ if __name__ == '__main__':
 
     parser.add_argument('-cam', '--num-cam', required=False, default=1,
                         help='Number of cameras to instantiate', type=int, choices=range(1, 10))
+
     parser.add_argument('-co', '--offs-cam', required=False, default=0,
                         help='First camera index to instantiate', type=int, choices=range(0, 10))
                         
     parser.add_argument('-proc', '--num-processors', required=False, default=4,
                         help='Number of processors to instantiate', type=int, choices=range(0, 10))
 
+    parser.add_argument('-CSI', '--CSI', help='Use CSI interface', action='store_true')
+
     args = vars(parser.parse_args())
 
-    if not args['test']:
-        from csdisplay import CSDisplay
+    if not args['test']: from csdisplay import CSDisplay
 
     NetworkTables.initialize(server=args['ip_address'])
 
     VisionTable = NetworkTables.getTable("BucketVision")
     VisionTable.putString("BucketVisionState", "Starting")
     VisionTable.putNumber("Exposure",50.0)
+
     source_list = list()
 
     for i in range(args['num_cam']):
-        cap = Cv2Capture(camera_num=i+args['offs_cam'], network_table=VisionTable, exposure=configs['exposure'], res=configs['camera_res'])
+        if not args['CSI']:
+            cap = Cv2Capture(camera_num=i+args['offs_cam'], network_table=VisionTable, exposure=configs['exposure'], res=configs['camera_res'])
+        else:
+            cap = CSICapture(camera_num=i+args['offs_cam'], network_table=VisionTable, exposure=configs['exposure'], res=configs['camera_res'])
         source_list.append(cap)
         cap.start()
 
@@ -65,7 +69,6 @@ if __name__ == '__main__':
         proc_list.append(proc)
         proc.start()
 
-
     VisionTable.putString("BucketVisionState", "Started Process")
 
     if args['test']:
@@ -81,7 +84,7 @@ if __name__ == '__main__':
         VisionTable.putValue("CameraNum", 0)
         while True:
             source_mux.source_num = int(VisionTable.getEntry("CameraNum").value)
-
+    
     except KeyboardInterrupt:
         if args['test']:
             window_display.stop()
@@ -91,4 +94,3 @@ if __name__ == '__main__':
             proc.stop()
         for cap in source_list:
             cap.stop()
-

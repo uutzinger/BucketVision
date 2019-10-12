@@ -1,9 +1,9 @@
-from   threading import Thread
+from   threading    import Thread
+from   processimage import ProcessImage
+from   configs      import configs
 import logging
 import cv2
 import time
-from   processimage import ProcessImage
-from   configs import configs
 
 class AngryProcesses(Thread):
     def __init__(self, source=None, network_table=None, debug_label=""):

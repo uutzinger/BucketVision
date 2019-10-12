@@ -16,13 +16,36 @@ configs = {
     'HSV_Bot'       : (91, 255, 255), # HSV bottom threshold for find target
     'Min_Area'      : 0.0001,         # Object needs to be bigger than Min_Area * # of pixels to quaify for valid object
     'MaxTargetRatio': 3,              # Target height to Dsitance to Target ratio
+    'RectRatioLimit': 6,              #
+    'MinAngle'      : 50,             #
+    'MaxAngle'      : 75,             #
     'Colorfactors'  : (-0.2957, 0.7606, -0.5780),      # Color factors from the Principal Component Analysis
     'GrayThresh'    : 24,             # Threshold for grayscale image
-    'ip'            : '10.41.83.2'    # address of network table server
+    'ip'            : '10.41.83.2',   # address of network table server
+    'MarkingColors' : colors = [      # For labeling targets 
+                      ( 75,  25, 230),
+                      ( 25, 225, 255),
+                      (200, 130,   0),
+                      ( 48, 130, 245),
+                      (240, 240,  70),
+                      (230,  50, 240),
+                      (190, 190, 250),
+                      (128, 128,   0),
+                      (255, 190, 230),
+                      ( 40, 110, 170),
+                      (200, 250, 255),
+                      (  0,   0, 128),
+                      (195, 255, 170),
+                      (128,   0,   0),
+                      (128, 128, 128),
+                      (255, 255, 255),
+                      ( 75, 180,  60) ]
 }
-
+ 
 cropped_vres = int(configs['camera_res'][1]*(configs['crop_bot'])) - int(configs['camera_res'][1]*(configs['crop_top']))
 configs['output_res'] = (configs['camera_res'][0], cropped_vres)
+
+# original configs had 'brigtness':3
 
 # MJPG BUFFER 1 FPS 100, 46,44,82ms lag
 # MJPG BUFFER 1 FPS 30, 41,68ms lag

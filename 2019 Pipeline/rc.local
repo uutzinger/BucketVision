@@ -1,0 +1,30 @@
+#!/bin/sh -e
+#
+# rc.local
+# Raspberry Pi automatically start custom programs and services with rc.local
+#
+# This script is executed at the end of each multiuser runlevel.
+# Make sure that the script will "exit 0" on success or any other
+# value on error.
+#
+# In order to enable or disable this script just change the execution
+# bits.
+#
+exec 2> /tmp/rc.local.log      # send stderr from rc.local to a log file
+exec 1>&2                      # send stdout to the same log file
+set -x                         # tell sh to display commands before execution
+
+#
+# Print the IP address
+_IP=$(hostname -I) || true
+if [ "$_IP" ]; then
+  printf "My IP address is %s\n" "$_IP"
+fi
+
+#
+# Get BucketVision going
+/usr/bin/screen -d -m /usr/bin/python3 "/home/pi/BucketVision/2019 Pipeline/BucketVision_AngryEyes_2019.py" -ip 10.41.83.2 -cam 2 -proc 1 
+
+#
+# No errors
+exit 0
