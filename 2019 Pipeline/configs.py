@@ -11,7 +11,7 @@ configs = {
     'autowhite'     : 0,              # 0, 1 bool                                                  CAP_PROP_AUTO_WB 
     'whitetemp'     : 57343,          # min=800 max=6500 step=1 default=57343                      CAP_PROP_WB_TEMPERATURE 
     'autofocus'     : 0,              # 0 or 1 bool,                                               CAP_PROP_AUTOFOCUS
-    'serverfps'     : 10,             # frame rate for display server
+    'serverfps'     : 16,             # frame rate for display server
     'HSV_Top'       : (49, 0, 48),    # HSV top threshold for find target
     'HSV_Bot'       : (91, 255, 255), # HSV bottom threshold for find target
     'Min_Area'      : 0.0001,         # Object needs to be bigger than Min_Area * # of pixels to quaify for valid object
