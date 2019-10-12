@@ -2,7 +2,10 @@
 __pycache__/
 
 *.pyc
-
+*.mp4
+*.png
+*.tiff
+*.so
 Pipfile
 Pipfile.lock
 
