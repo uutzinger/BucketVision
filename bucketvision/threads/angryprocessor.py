@@ -9,7 +9,6 @@ from bucketvision.configs import configs
 
 class AngryProcessor(threading.Thread):
     def __init__(self, source=None, network_table=None, debug_label=""):
-        self.frame = self.source.frame
         self.logger = logging.getLogger("AngryProcesses")
         self.net_table = network_table
         self.source = source
@@ -105,7 +104,7 @@ class AngryProcessor(threading.Thread):
                 # else:
                 # 	self.frame = self.source.frame
                 elif self.source is not None:
-                    pass
+                    self.frame = self.source.frame
                 else:
                     self.new_frame = True
                 self.update_results()

@@ -4,6 +4,8 @@ import time
 
 import cv2
 
+import os
+
 from bucketvision.configs import configs
 
 try:
@@ -14,8 +16,6 @@ except ImportError:
 
 class Cv2Capture(threading.Thread):
     def __init__(self, camera_num=0, res=(640, 480), network_table=None, exposure=None):
-        self.width = self.camera_res[0]
-        self.height = self.camera_res[1]
         self.logger = logging.getLogger("Cv2Capture{}".format(camera_num))
         self.camera_num = camera_num
         self.net_table = network_table
@@ -147,6 +147,8 @@ class Cv2Capture(threading.Thread):
 
     def start(self):
         self.stopped = False
+        self.width = self.camera_res[0]
+        self.height = self.camera_res[1]
         if self._exposure is None:
             self.exposure = self.exposure
         else:

@@ -6,7 +6,6 @@ import cv2
 
 class Cv2Display(threading.Thread):
     def __init__(self, source=None, window_name="Camera0"):
-        self.frame = self.source.frame
         self.logger = logging.getLogger("Cv2Display")
         self.window_name = window_name
         self.source = source
@@ -37,7 +36,7 @@ class Cv2Display(threading.Thread):
         while not self.stopped:
             if self.source is not None:
                 if self.source.new_frame:
-                    pass
+                    self.frame = self.source.frame
             if self._new_frame:
                 cv2.imshow(self.window_name, self._frame)
                 self._new_frame = False
