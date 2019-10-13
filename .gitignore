@@ -8,3 +8,8 @@ Pipfile.lock
 
 .vscode/
 GRIP/
+
+*.iml
+*.idea/
+build/
+venv/
