@@ -9,9 +9,8 @@ from Cython.Build import cythonize
 
 setup(ext_modules=cythonize("processimage.py"))
 #setup(ext_modules=cythonize("angryprocesses.py"))
-#setup(ext_modules=cythonize("usbcapture.py"))
+#setup(ext_modules=cythonize("cv2capture.py"))
 #setup(ext_modules=cythonize("csicapture.py"))
-#setup(ext_modules=cythonize("usbcapture.py"))
 #setup(ext_modules=cythonize("csdisplay.py"))
 #setup(ext_modules=cythonize("cv2display.py"))
 #setup(ext_modules=cythonize("mux1n.py"))

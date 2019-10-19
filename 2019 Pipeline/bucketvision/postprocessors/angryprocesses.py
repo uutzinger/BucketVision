@@ -1,11 +1,17 @@
 from   threading    import Thread
-from   processimage import ProcessImage
-from   configs      import configs
 import logging
-import cv2
 import time
 
+import cv2
+
+from   bucketvision.postprocessors.processimage import ProcessImage
+from   bucketvision.configs                     import configs
+
 class AngryProcesses(Thread):
+    """
+    The AngryProcessor takes a source that has been resized and uses ProcessImage() to
+    find and draw a target on the output before sending it to NetworkTables
+    """
     def __init__(self, source=None, network_table=None, debug_label=""):
         self.logger = logging.getLogger("AngryProcesses")
         self.net_table = network_table
@@ -21,24 +27,12 @@ class AngryProcesses(Thread):
             self.net_table.putNumber("LastFrameTime", 0.0)
 
         self.processor = ProcessImage()
+        
         self.results = list()
 
         self.camera_res = configs['camera_res']
-
         self.stopped = True
         Thread.__init__(self)
-
-    #
-    # Network Table routines ##########################################
-    #
-    def write_table_value(self, name, value, level=logging.DEBUG):
-        self.logger.log(level, "{}:{}".format(name, value))
-        if self.net_table is None:
-            self.net_table = dict()
-        if type(self.net_table) is dict:
-            self.net_table[name] = value
-        else:
-            self.net_table.putValue(name, value)
 
     @property
     def frame(self):
@@ -69,7 +63,16 @@ class AngryProcesses(Thread):
                 # Here we assume that every param is a number of some kind
                 self.net_table.putNumberArray(key, value)
 
-    def draw_trgt(self):
+    def write_table_value(self, name, value, level=logging.DEBUG):
+        self.logger.log(level, "{}:{}".format(name, value))
+        if self.net_table is None:
+            self.net_table = dict()
+        if type(self.net_table) is dict:
+            self.net_table[name] = value
+        else:
+            self.net_table.putValue(name, value)
+
+    def draw_targets(self):
         if self.source is None:
             return self.processor.drawtargets(self.frame, self.results)
         else:
@@ -85,54 +88,55 @@ class AngryProcesses(Thread):
         Thread.start(self)
 
     def run(self):
-        Target_Timing_hist = list()
-        start_time = time.time()
-        num_frames = 0
+        Target_Timing_hist = list() # Records the time it took to find targets for 50 frames
+        start_time = time.time()    # Keeps track of loop timing
+        num_frames = 0              # How many frames do we process in 5s
         while not self.stopped:
             if self.source is not None:
                 if self.source.new_frame:
                     self._new_frame = True
+            #continue
             if self._new_frame:
+                # How many frames do we pass through the pipeline?
                 if time.time() - start_time >= 5.0:
                     self.write_table_value("TargetFramesProcessedPS", num_frames/5.0 )
-                    # print("Targets processed:{}/s".format(num_frames/5.0))
                     num_frames = 0
                     start_time = time.time()
                 self.last_frame_time = time.time()
-                tmp_s = time.time()
-                if self.source is not None:
-                    frame = self.source.frame
-                else:
-                    frame = self.frame
+
+                # Find the target in cropped image
+                time_target_start = time.time()
                 crop_top = int(self.camera_res[1]*configs['crop_top'])
                 crop_bot = int(self.camera_res[1]*configs['crop_bot'])
-                self.results = self.processor.FindTarget(frame[crop_top:crop_bot, :, :])
-                Target_Timing_hist.append((time.time() - tmp_s))
+                if self.source is not None:
+                    self.results, self.timings = self.processor.FindTarget(self.source.frame[crop_top:crop_bot, :, :])
+                else:
+                    self.results, self.timings = self.processor.FindTarget(self.frame[crop_top:crop_bot, :, :])
+
+                # How long did it take?
+                Target_Timing_hist.append((time.time() - time_target_start))
                 if len(Target_Timing_hist) >= 50:
-                   self.write_table_value("TargetsProcessedPS", sum(Target_Timing_hist)/50.0 )
-                   # print("Target detected in:{:.3f} s".format(sum(Target_Timing_hist)/50.0))
+                   self.write_table_value("TargetProcessingTime", sum(Target_Timing_hist)/50.0 )
                    Target_Timing_hist = list()
+
+                # Draw targets if requested
                 if self.net_table is not None:
-                    pass
-                    # self.frame = self.draw_trgt()
-                    # if self.net_table.getBoolean('Overlay', False):
-                    #     self.frame = self.draw_trgt()
-                    # elif self.source is None:
-                    #    pass
-                    # else:
-                    #     self.frame = self.source.frame
+                    if self.net_table.getBoolean('Overlay', True):
+                        # Adjust for cropping
+                        self.frame[crop_top:crop_bot, :, :] = self.draw_targets(self.frame[crop_top:crop_bot, :, :], self.results)
                 elif self.source is not None:
                     self.frame = self.source.frame
                 else:
                     self.new_frame = True
+                    
                 self.update_results()
                 self._new_frame = False
                 num_frames = num_frames + 1
-                #print("\nAP: {} done at {}".format(self.debug_label, time.time()))
 
 if __name__ == '__main__':
-    from cv2capture import Cv2Capture
-    from cv2display import Cv2Display
+    from bucketvision.capturers.cv2capture import Cv2Capture
+    from bucketvision.diplays.cv2display   import Cv2Display
+    
     logging.basicConfig(level=logging.DEBUG)
 
     print("Start Cam")

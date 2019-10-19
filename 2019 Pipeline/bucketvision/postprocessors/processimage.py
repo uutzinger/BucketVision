@@ -3,7 +3,7 @@ import os
 import numpy as np
 import cv2
 
-from   configs import configs
+from   bucketvision.configs import configs
 
 def display_scaled_image(name, image, scale):
     """Function to display a scaled cv2 image
@@ -29,7 +29,6 @@ def display_scaled_image(name, image, scale):
 def point_dist(a, b):
     x_1, y_1 = a
     x_2, y_2 = b
-
     return math.sqrt((x_1 - x_2) ** 2 + (y_1 - y_2) ** 2)
 
 
@@ -50,7 +49,7 @@ class Point(object):
         else:
             self.x = x
             self.y = y
-
+    
     def dist(self, point):
         """
         Caculates the distance to the selected point
@@ -69,11 +68,11 @@ class Point(object):
 
 class RotatedRect(object):
     def __init__(self, rect):
-        self.raw_rect = rect
+        self.raw_rect   = rect
         self.center_pos = Point(rect[0][0], rect[0][1])
-        self.width = min(rect[1])
-        self.height = max(rect[1])
-        self.angle = rect[2]
+        self.width      = min(rect[1])
+        self.height     = max(rect[1])
+        self.angle      = rect[2]
 
     @property
     def ratio(self):
@@ -89,9 +88,9 @@ class VisionTarget(object):
     rect_width = 2
     rect_aspect_ratio = rect_height / rect_width
     angle = 90 - (2 * 14.5)  # angled toward each other at ~14.5 degrees
-    center_cap = 11.31  # cacualted based on specs
+    center_cap = 11.31  # calculalted based on specs
 
-    camera_hfov = 80.0  # degrees
+    camera_hfov = configs['fov']            # degrees
     camera_hres = configs['camera_res'][0]  # pixels
     camera_vres = configs['camera_res'][1]  # pixels
     camera_px_per_deg = camera_hres / camera_hfov
@@ -113,7 +112,8 @@ class VisionTarget(object):
         negative if we are on the right side of the target
         "should" be invariant of the distance to target
         """
-        aspect_tol = 0.1
+        
+        # aspect_tol = 0.1
 
         # Check left rect ratio
         #if not (1 - aspect_tol) * self.rect_aspect_ratio < self.l_rect.ratio:
@@ -168,17 +168,21 @@ class VisionTarget(object):
 
 
 class ProcessImage(object):
-
+    """
+    Searches for rectangles
+    Pairs rectangles to target
+    Returns Position, Distance and Angle to target
+    """
     def __init__(self):
         (self.cv2major, self.cv2minor, _) = cv2.__version__.split(".")
-        self.colors           = configs['MarkingColors']
         self.HSV_Top          = configs['HSV_Top']
         self.HSV_Bot          = configs['HSV_Bot']
         self.Min_Rect_Area    = configs['Min_Area']
         self.Max_Trgt_Ratio   = configs['MaxTargetRatio']
         self.Rect_Ratio_Limit = configs['RectRatioLimit']
         self.Min_Ang          = configs['MinAngle']
-        self.Max_Ang          = configs['MaxAngle']
+        self.Max_Ang          = configs['MaxAngle']        
+        self.colors           = configs['MarkingColors']
         
     def FindTarget(self, image):
         height, width, _ = image.shape
@@ -186,17 +190,17 @@ class ProcessImage(object):
 
         # Convert BGR to HSV 
         # 7,4,12,13,13,6,6,8 ms
-        # e1 = cv2.getTickCount()
+        e1 = cv2.getTickCount()
         HSV_image = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
         # HSV threshold 
         # 12,7,5,6,6,6,6,11 ms
-        #e2 = cv2.getTickCount()
+        e2 = cv2.getTickCount()
         threshold = cv2.inRange(HSV_image, self.HSV_Top, self.HSV_Bot)
 
         # Find Contours 
         # 252, 76, 141, 48, 114
-        #e3 = cv2.getTickCount()
+        e3 = cv2.getTickCount()
         if self.cv2major == '4':
             contours, _    = cv2.findContours(threshold, mode=cv2.RETR_EXTERNAL, method=cv2.CHAIN_APPROX_SIMPLE)
         else:
@@ -205,7 +209,7 @@ class ProcessImage(object):
         
         # Filter Contours that are smaller than threshold 
         # 46, 41, 0.1, 17
-        #e4 = cv2.getTickCount()
+        e4 = cv2.getTickCount()
         c_contours = list() # candidate objects
         for contour in contours:
             contour_area = cv2.contourArea(contour)
@@ -215,12 +219,12 @@ class ProcessImage(object):
         # Convert min area rect 
         # 0.1
         # 109, 127, 106, 86, 146, 115, 47, 141
-        #e8 = cv2.getTickCount()
+        e5 = cv2.getTickCount()
         min_rectangles = [cv2.minAreaRect(contour) for contour in c_contours]
 
         # Filter Rectangles, and classify as left (leaning right) or right (leaning left)
         # 0.5, 0.01 0.5
-        #e9 = cv2.getTickCount()
+        e6 = cv2.getTickCount()
         right_rect = list()
         left_rect = list()
         for rect in min_rectangles:
@@ -244,7 +248,7 @@ class ProcessImage(object):
 
         # Pair rects (based on the left rects) 
         # 0.5ms 0.7
-        #e10 = cv2.getTickCount()
+        e7 = cv2.getTickCount()
         for l_rect in left_rect:
             found_match = False
             l_x, l_y = l_rect[0]
@@ -277,17 +281,26 @@ class ProcessImage(object):
                 del right_rect[r_index]
 
         found_targets = [VisionTarget(t[0], t[1]) for t in rect_pairs]
-        #e11 = cv2.getTickCount()
+        
+        e8 = cv2.getTickCount()
         #print("Time consumed for Target Detection:{}".format((e11  - e1)/cv2.getTickFrequency()))
-        #print ("Color             ", (e2  - e1)/cv2.getTickFrequency())
-        #print ("Threshold         ", (e3  - e2)/cv2.getTickFrequency())
-        #print ("A Contours        ", (e4  - e3)/cv2.getTickFrequency())
-        #print ("A Contour Filter  ", (e8  - e4)/cv2.getTickFrequency())
-        #print ("Min Area Rectangle", (e9  - e8)/cv2.getTickFrequency())
-        #print ("Filter Rectangles ", (e10 - e9)/cv2.getTickFrequency())
-        #print ("Pair Rectangles   ", (e11 - e10)/cv2.getTickFrequency())
-
-        return found_targets
+        #print ("Color             ", (e2 - e1)/cv2.getTickFrequency())
+        #print ("Threshold         ", (e3 - e2)/cv2.getTickFrequency())
+        #print ("A Contours        ", (e4 - e3)/cv2.getTickFrequency())
+        #print ("A Contour Filter  ", (e5 - e4)/cv2.getTickFrequency())
+        #print ("Min Area Rectangle", (e6 - e5)/cv2.getTickFrequency())
+        #print ("Filter Rectangles ", (e7 - e6)/cv2.getTickFrequency())
+        #print ("Pair Rectangles   ", (e8 - e7)/cv2.getTickFrequency())
+        tmp_scale  = cv2.getTickFrequency()
+        t_color             = (e2 - e1)/tmp_scale
+        t_thresh            = (e3 - e2)/tmp_scale
+        t_contours          = (e4 - e3)/tmp_scale
+        t_contour_filter    = (e5 - e4)/tmp_scale
+        t_min_area_rect     = (e6 - e5)/tmp_scale
+        t_filter_rectangles = (e7 - e6)/tmp_scale
+        t_pair_rectangles   = (e8 - e7)/tmp_scale
+        
+        return found_targets, [t_color, t_thresh, t_contours, t_contour_filter, t_min_area_rect, t_filter_rectanglest t_pair_rectangles]
 
     @staticmethod
     def drawtargets(image, targets):
@@ -295,12 +308,9 @@ class ProcessImage(object):
         for index, target in enumerate(targets):
             found_cont = [np.int0(cv2.boxPoints(r)) for r in [target.l_rect.raw_rect, target.r_rect.raw_rect]]
             try:
+                # mark the target
                 color = ProcessImage.colors[index]
                 image = cv2.drawContours(image, found_cont, -1, color, 3)
-                x, y = target.pos
-                image = cv2.circle(image, (int(x * width), int(y * height)),
-                                    int((target.size * width) / 4),
-                                    color, -1)
             except IndexError:
                 # More targets than colors!
                 pass
@@ -331,7 +341,7 @@ def live_video():
         ret_val, img = cam.read()
         camera_res = img.shape
         img = img[int(camera_res[1]*(configs['crop_top'])):int(camera_res[1]*(configs['crop_bot'])), :, :]
-        res = proc.FindTarget(img)
+        res, _ = proc.FindTarget(img)
         display_scaled_image('test', proc.drawtargets(img, res), 1)
         if cv2.waitKey(1) == 27:
             break  # esc to quit
@@ -342,7 +352,7 @@ def live_video():
 def single_image(image_path):
     proc = ProcessImage()
     img = cv2.imread(image_path)
-    found_targets = proc.FindTarget(img)
+    found_targets, _ = proc.FindTarget(img)
     img = proc.drawtargets(img, found_targets)
     if len(found_targets) > 0:
         pass

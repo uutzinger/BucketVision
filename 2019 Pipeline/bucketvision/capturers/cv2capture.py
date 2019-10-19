@@ -1,10 +1,13 @@
+# Multi Threading
 from   threading import Thread
 from   threading import Lock
-from   configs   import configs
+#
 import logging
 import time
 import os
 import cv2
+
+from   bucketvision.configs   import configs
 
 try:
     import networktables
@@ -12,8 +15,11 @@ except ImportError:
     pass
 
 class Cv2Capture(Thread):
+    """
+    This thread continually captures frames from a USB camera
+    """
     def __init__(self, camera_num=0, res=None, network_table=None, exposure=None):
-        self.logger = logging.getLogger("CV2Capture{}".format(camera_num))
+        self.logger = logging.getLogger("Cv2Capture2Capture{}".format(camera_num))
         self.camera_num = camera_num
         self.net_table = network_table
 
@@ -46,29 +52,36 @@ class Cv2Capture(Thread):
         self.fps        =     configs['fps'] 
         self.buffersize = int(configs['buffersize'])
 
+        # Init Frame and Thread   
         self._frame = None
         self._new_frame = False
-
         self.stopped = True
         Thread.__init__(self)
 
+    #
+    # Frame routines ##################################################
+    #
     @property
+    # reads more recentframe
     def new_frame(self):
-        out = False
         with self.frame_lock:
             out = self._new_frame
         return out
 
     @new_frame.setter
+    # check if new frame available
     def new_frame(self, val):
         with self.frame_lock:
             self._new_frame = val
 
     @property
+    # sets wether new frame is available
     def frame(self):
         with self.frame_lock:
             self._new_frame = False
         return self._frame
+
+
 
     @property
     def width(self):
@@ -186,6 +199,10 @@ class Cv2Capture(Thread):
                             "Failed to set Buffer Size to {}!".format(val),
                             level=logging.CRITICAL)
 
+    #
+    # Network Table routines ##########################################
+    #
+
     def write_table_value(self, name, value, level=logging.DEBUG):
         self.logger.log(level, "{}:{}".format(name, value))
         if self.net_table is None:
@@ -194,6 +211,10 @@ class Cv2Capture(Thread):
             self.net_table[name] = value
         else:
             self.net_table.putValue(name, value)
+
+    #
+    # Thread routines #################################################
+    #
 
     def stop(self):
         self.stopped = True
@@ -212,7 +233,6 @@ class Cv2Capture(Thread):
         first_frame = True
         start_time = time.time()
         num_frames = 0
-        img = None
         while not self.stopped:
             current_time = time.time()
             if (current_time - start_time) >= 5.0:
@@ -224,17 +244,19 @@ class Cv2Capture(Thread):
             try:
                 if self._exposure != self.net_table.getEntry("Exposure").value:
                     self.exposure = self.net_table.getEntry("Exposure").value
-            except: pass
+                pass
+            except: 
+                pass
             
             with self.capture_lock:
                 _, img = self.cap.read()
                 with self.frame_lock:
-                    self._frame = img[int(self.camera_res[1]*(configs['crop_top'])):int(self.camera_res[1]*(configs['crop_bot'])), :, :]
+                    self._frame = img
                     if first_frame:
                         first_frame = False
                         print(img.shape, self._frame.shape)
                     self._new_frame = True
-                    num_frames = num_frames + 1
+                num_frames = num_frames + 1
 
 if __name__ == '__main__':
     import os

@@ -4,13 +4,16 @@ from threading import Lock
 #
 import logging
 import time
+
 # Open Computer Vision
 import cv2
+
 # Camera    
-from picamera.array import PiRGBArray
-from picamera import PiCamera
-# Bucketvision Camerra
-from configs import configs
+from picamera.array         import PiRGBArray
+from picamera               import PiCamera
+
+from bucketvision.configs   import configs
+
 # Networktables
 try:
     import networktables
@@ -18,11 +21,15 @@ except ImportError:
     pass
 
 class CSICapture(Thread):
+    """
+    This thread continually captures frames from a CSI camera
+    """
     def __init__(self, camera_num=0, res=None, network_table=None, exposure=None, frate=None):
         #
         self.logger     = logging.getLogger("CSICapture{}".format(camera_num))
         self.camera_num = camera_num
         self.net_table  = network_table
+
         # Threading Locks
         self.capture_lock = Lock()
         self.frame_lock   = Lock()
@@ -86,7 +93,6 @@ class CSICapture(Thread):
     @property
     # check if new frame available
     def new_frame(self):
-        out = False
         with self.frame_lock: 
             out = self._new_frame
         return out
@@ -142,14 +148,14 @@ class CSICapture(Thread):
             with self.capture_lock:
                 img = f.array
                 self.rawCapture.truncate(0)
-            # Adjust image size: crop top and bottom
             with self.frame_lock:
-                self._frame = img[int(self._resolution[1]*(configs['crop_top'])):int(self._resolution[1]*(configs['crop_bot'])), :, :]
+                self._frame = img
                 if first_frame:
                     first_frame = False
                     print(img.shape, self._frame.shape)
                 self._new_frame = True
             num_frames = num_frames + 1
+
             if self.stopped:
                 self.stream.close()
                 self.rawCapture.close()
@@ -169,6 +175,7 @@ class CSICapture(Thread):
     # read  exposure_speed gives actual exposure 
     # shutter_speed = 0 then auto exposure
     # framerate determines maximum exposure
+
     # Read
     @property
     def resolution(self):            
@@ -195,6 +202,7 @@ class CSICapture(Thread):
         if self.camera_open: 
             with self.capture_lock: return self.camera.exposure_speed                        
         else: return float("NaN")
+
     # Write
     @resolution.setter
     def resolution(self, val):
@@ -270,6 +278,7 @@ class CSICapture(Thread):
     # analog gain: retreives the analog gain prior to digitization
     # digital gain: applied after conversion, a fraction
     # awb_gains: 0..8 for red,blue, typical values 0.9..1.9 if awb mode is set to "off:
+
     # Read
     @property
     def awb_mode(self):              
@@ -329,6 +338,7 @@ class CSICapture(Thread):
     # exposure mode can be off, auto, night, nightpreview, backight, spotlight, sports, snow, beach, verylong, fixedfps, antishake, fireworks, default is auto, off fixes the analog and digital gains
     # exposure compensation -25..25, larger value gives brighter images, default is 0
     # meter_mode'average', 'spot', 'backlit', 'matrix'
+
     # Read
     @property
     def brightness(self):            
@@ -427,6 +437,7 @@ class CSICapture(Thread):
     # image_effect_params, setting the parameters for the image effects see https://picamera.readthedocs.io/en/release-1.13/api_camera.html
     # sharpness -100..100 default 0
     # video_stabilization default is False
+
     # Read
     @property
     def flash_mode(self):            

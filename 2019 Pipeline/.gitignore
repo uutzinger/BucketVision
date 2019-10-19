@@ -1,0 +1,16 @@
+
+__pycache__/
+
+*.pyc
+
+Pipfile
+Pipfile.lock
+
+.vscode/
+GRIP/
+
+*.iml
+*.idea/
+build/
+venv/
+.DS_Store

@@ -1,4 +1,7 @@
 class ClassMux(object):
+	"""
+	This multiplexer takes source processors as sources
+	"""
 	def __init__(self, *sources):
 		self.__dict__['sources'] = sources
 		self.__dict__['source_num'] = 0
